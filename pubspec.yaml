@@ -1,0 +1,27 @@
+name: lab2_kc_house
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  csv: ^6.0.0
+  date_format: ^2.0.9
+  fl_chart: ^1.1.1
+  flutter:
+    sdk: flutter
+  flutter_bloc: ^8.1.3
+  intl: ^0.20.2
+
+dev_dependencies:
+  flutter_lints: ^5.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/kc_house_data.csv
+    - assets/world_population.csv
