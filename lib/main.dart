@@ -31,7 +31,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowMaterialGrid: true,
+      debugShowCheckedModeBanner: false,
       title: 'Анализатор данных о населении',
       theme: ThemeData(
         primarySwatch: Colors.blue,

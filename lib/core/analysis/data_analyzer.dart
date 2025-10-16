@@ -61,24 +61,35 @@ class DataAnalyzer {
       }
     }
 
-    // Форматированный вывод результатов
-    debugPrint('=== СТАТИСТИКА ПУСТЫХ ЗНАЧЕНИЙ ===');
+    // Форматированный вывод результатов в виде таблицы
+    debugPrint('═' * 60);
+    debugPrint('СТАТИСТИКА ПУСТЫХ ЗНАЧЕНИЙ');
     debugPrint('Всего записей: ${data.length}');
+    debugPrint('═' * 60);
+    debugPrint('${'Поле'.padRight(25)}${'Пустых'.padRight(10)}${'Заполнено'.padRight(15)}%');
+    debugPrint('─' * 60);
     
     counters.forEach((field, emptyCount) {
       final filledCount = data.length - emptyCount;
       final filledPercentage = (filledCount / data.length * 100).toStringAsFixed(1);
-      debugPrint('$field: $emptyCount/$data.length ($filledPercentage% заполнено)');
+      
+      final fieldDisplay = field.length > 24 ? '${field.substring(0, 22)}..' : field;
+      
+      debugPrint(
+        '${fieldDisplay.padRight(25)}${emptyCount.toString().padRight(10)}${filledCount.toString().padRight(15)}$filledPercentage%'
+      );
     });
+    
+    debugPrint('═' * 60);
   }
 
-  /// Выполняет статистический анализ числовых полей данных.
+  /// Выполняет статистический анализ числовых полей данных с табличным выводом.
   /// 
   /// Принимает:
   /// - [data] - данные для анализа.
   /// 
   /// Выводит в консоль описательную статистику (count, mean, std, min, max, квартили)
-  /// для всех числовых полей данных.
+  /// для всех числовых полей данных в виде форматированной таблицы.
   static void describe<T extends DataModel>(List<T> data) {
     final numericFields = data.isNotEmpty ? data.first.getNumericFields() : [];
     
@@ -87,36 +98,88 @@ class DataAnalyzer {
       return;
     }
     
-    debugPrint('=== СТАТИСТИЧЕСКОЕ РЕЗЮМЕ ===');
+    // Собираем статистику для всех полей
+    final fieldStats = <String, DescriptiveStats>{};
     for (var field in numericFields) {
-      _describeField(data, field);
+      final stats = _calculateFieldStats(data, field);
+      if (stats != null) {
+        fieldStats[field] = stats;
+      }
     }
+    
+    if (fieldStats.isEmpty) {
+      debugPrint('Нет валидных числовых данных для анализа');
+      return;
+    }
+    
+    _printDescriptiveStatsTable(fieldStats, data.length);
   }
 
-  /// Анализирует и выводит статистику для конкретного поля.
-  /// 
-  /// Принимает:
-  /// - [data] - данные для анализа,
-  /// - [field] - имя поля для анализа.
-  /// 
-  /// Вычисляет основные статистические показатели для указанного поля.
-  static void _describeField<T extends DataModel>(List<T> data, String field) {
+  /// Вычисляет статистику для конкретного поля.
+  static DescriptiveStats? _calculateFieldStats<T extends DataModel>(List<T> data, String field) {
     final values = data
         .map((item) => item.getNumericValue(field))
         .where((value) => value != null && value.isFinite)
         .cast<double>()
         .toList();
     
-    if (values.isEmpty) {
-      debugPrint('$field: нет валидных значений для анализа');
-      return;
-    }
+    if (values.isEmpty) return null;
     
-    final stats = StatisticsCalculator.calculateDescriptiveStats(values);
-    debugPrint('$field: count=${stats.count}, mean=${stats.mean.toStringAsFixed(2)}, '
-               'std=${stats.std.toStringAsFixed(2)}, min=${stats.min.toStringAsFixed(2)}, '
-               'Q1=${stats.q1.toStringAsFixed(2)}, median=${stats.median.toStringAsFixed(2)}, '
-               'Q3=${stats.q3.toStringAsFixed(2)}, max=${stats.max.toStringAsFixed(2)}');
+    return StatisticsCalculator.calculateDescriptiveStats(values);
+  }
+
+  /// Выводит таблицу с описательной статистикой.
+  static void _printDescriptiveStatsTable(Map<String, DescriptiveStats> fieldStats, int totalRecords) {
+    debugPrint('═' * 120);
+    debugPrint('ОПИСАТЕЛЬНАЯ СТАТИСТИКА ЧИСЛОВЫХ ПОЛЕЙ');
+    debugPrint('Всего записей: $totalRecords | Анализировано полей: ${fieldStats.length}');
+    debugPrint('═' * 120);
+    
+    // Заголовок таблицы
+    debugPrint(
+      'Поле'.padRight(20) +
+      'Count'.padRight(8) +
+      'Mean'.padRight(12) +
+      'Std'.padRight(12) +
+      'Min'.padRight(12) +
+      'Q1'.padRight(12) +
+      'Median'.padRight(12) +
+      'Q3'.padRight(12) +
+      'Max'.padRight(12)
+    );
+    debugPrint('─' * 120);
+    
+    // Данные для каждого поля
+    fieldStats.forEach((field, stats) {
+      final fieldDisplay = field.length > 18 ? '${field.substring(0, 16)}..' : field;
+      
+      debugPrint(
+        fieldDisplay.padRight(20) +
+        stats.count.toString().padRight(8) +
+        _formatNumber(stats.mean).padRight(12) +
+        _formatNumber(stats.std).padRight(12) +
+        _formatNumber(stats.min).padRight(12) +
+        _formatNumber(stats.q1).padRight(12) +
+        _formatNumber(stats.median).padRight(12) +
+        _formatNumber(stats.q3).padRight(12) +
+        _formatNumber(stats.max).padRight(12)
+      );
+    });
+    
+    debugPrint('═' * 120);
+  }
+
+  /// Форматирует числа для красивого вывода.
+  static String _formatNumber(double value) {
+    if (value.abs() >= 1000000) {
+      return '${(value / 1000000).toStringAsFixed(1)}M';
+    } else if (value.abs() >= 1000) {
+      return '${(value / 1000).toStringAsFixed(1)}K';
+    } else if (value.abs() >= 1) {
+      return value.toStringAsFixed(1);
+    } else {
+      return value.toStringAsFixed(4);
+    }
   }
 
   /// Проверяет, является ли значение пустым.
