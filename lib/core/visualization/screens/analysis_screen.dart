@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import '../../../features/histograms/histogram_config.dart';
+import '../../../features/histograms/histogram_widget.dart';
 import '../../data/data_bloc.dart';
 import '../../data/data_event.dart';
 import '../../data/data_model.dart';
@@ -22,12 +24,17 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
   /// Флаг автоматической загрузки данных при инициализации.
   final bool autoLoad;
 
+  final HistogramConfig<T>? histogramConfig;
+  
+  final String? histogramTitle;
   /// {@macro generic_analysis_screen}
   const GenericAnalysisScreen({
     required this.bloc,
     required this.title,
     this.autoLoad = true,
-    super.key,
+    super.key, 
+    this.histogramConfig,
+     this.histogramTitle,
   });
 
   @override
@@ -85,10 +92,12 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
         children: [
           _buildStatisticsCard(state),
           CorrelationHeatmap(correlationMatrix: state.correlationMatrix),
-          // Здесь будут другие визуализации
-          // PairPlotChart(data: state.data, fields: state.numericFields),
-          // HistogramGrid(data: state.data, fields: state.numericFields),
-          // BoxPlotChart(data: state.data, fields: state.numericFields),
+          if (histogramConfig != null)
+          UniversalHistograms<T>(
+            data: state.data,
+            config: histogramConfig!,
+            title: histogramTitle ?? 'Распределение данных по признакам',
+          ),
           _buildMetadataCard(state),
         ],
       ),
@@ -295,6 +304,7 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
     );
   }
 
+  
   /// Показывает диалог с опциями анализа.
   void _showAnalysisOptions(BuildContext context, DataLoaded<T> state) {
     showDialog(

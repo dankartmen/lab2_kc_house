@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'core/visualization/screens/analysis_screen.dart';
+import 'features/histograms/configs/house_histogram_config.dart';
+import 'features/histograms/configs/population_histogram_config.dart';
 import 'features/house/bloc/house_bloc.dart';
 import 'features/house/data/house_data_model.dart';
 import 'features/population/bloc/population_bloc.dart';
@@ -99,6 +101,8 @@ class HouseAnalysisScreen extends StatelessWidget {
     return GenericAnalysisScreen<HouseDataModel>(
       bloc: context.read<HouseDataBloc>(),
       title: 'Анализ недвижимости',
+      histogramConfig: HouseHistogramConfig(),
+      histogramTitle: 'Гистограммы распределения цен и площадей',
       autoLoad: true,
     );
   }
@@ -116,7 +120,10 @@ class PopulationAnalysisScreen extends StatelessWidget {
     return GenericAnalysisScreen<PopulationData>(
       bloc: context.read<PopulationBloc>(),
       title: 'Анализ населения стран',
+      histogramConfig: PopulationHistogramConfig(),  // Конфигурация для населения
+      histogramTitle: 'Гистограммы распределения по странам',
       autoLoad: true,
     );
   }
+
 }

@@ -1,4 +1,4 @@
-import 'package:lab2_kc_house/core/data/data_model.dart';
+import '../../../core/data/data_model.dart';
 
 class PopulationData implements DataModel{
   final int? rank;

@@ -1,5 +1,5 @@
-import 'package:lab2_kc_house/features/house/data/csv_house_data_source.dart';
-import 'package:lab2_kc_house/features/house/data/house_data_model.dart';
+import '../data/csv_house_data_source.dart';
+import '../data/house_data_model.dart';
 
 import '../../../core/data/data_bloc.dart';
 
