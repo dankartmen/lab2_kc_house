@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lab2_kc_house/features/box_plots/configs/house_box_plot_config.dart';
 
 import 'core/visualization/screens/analysis_screen.dart';
 import 'features/histograms/configs/house_histogram_config.dart';
@@ -103,6 +104,8 @@ class HouseAnalysisScreen extends StatelessWidget {
       title: 'Анализ недвижимости',
       histogramConfig: HouseHistogramConfig(),
       histogramTitle: 'Гистограммы распределения цен и площадей',
+      boxPlotConfig: HouseBoxPlotConfig(),
+      boxPlotTitle: 'Диаграмма размаха',
       autoLoad: true,
     );
   }

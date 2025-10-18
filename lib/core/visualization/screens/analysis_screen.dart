@@ -9,6 +9,8 @@ import '../../data/data_event.dart';
 import '../../data/data_model.dart';
 import '../../data/data_state.dart';
 import '../charts/correlation_heatmap.dart';
+import '../../../features/box_plots/box_plot_config.dart';
+import '../../../features/box_plots/box_plot_widget.dart';
 
 /// {@template generic_analysis_screen}
 /// Универсальный экран для анализа данных любого типа.
@@ -27,6 +29,12 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
   final HistogramConfig<T>? histogramConfig;
   
   final String? histogramTitle;
+
+  final BoxPlotConfig<T>? boxPlotConfig;
+
+  final String? boxPlotTitle;
+  
+  
   /// {@macro generic_analysis_screen}
   const GenericAnalysisScreen({
     required this.bloc,
@@ -34,7 +42,9 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
     this.autoLoad = true,
     super.key, 
     this.histogramConfig,
-     this.histogramTitle,
+    this.histogramTitle, 
+    this.boxPlotConfig, 
+    this.boxPlotTitle,
   });
 
   @override
@@ -93,15 +103,27 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
           _buildStatisticsCard(state),
           CorrelationHeatmap(correlationMatrix: state.correlationMatrix),
           if (histogramConfig != null)
-          UniversalHistograms<T>(
-            data: state.data,
-            config: histogramConfig!,
-            title: histogramTitle ?? 'Распределение данных по признакам',
-          ),
+            UniversalHistograms<T>(
+              data: state.data,
+              config: histogramConfig!,
+              title: histogramTitle ?? 'Распределение данных по признакам',
+            ),
+          if (boxPlotConfig != null)
+            UniversalBoxPlot<T>(
+              data: state.data,
+              config: boxPlotConfig!,
+              title: boxPlotTitle ?? 'Ящики с усами: Распределение по признакам',
+            ),
+          
           _buildMetadataCard(state),
         ],
       ),
     );
+  }
+
+  /// Подготавливает данные для 3D графиков - преобразует в простой Map
+  List<Map<String, dynamic>> _prepareDataFor3D(List<T> data) {
+    return data.map((item) => item.toJson()).toList();
   }
 
   /// Строит карточку со статистикой данных.
@@ -131,6 +153,7 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
               'Время анализа', 
               _formatTimestamp(state.metadata['analysisTimestamp'])
             ),
+            
           ],
         ),
       ),
@@ -193,6 +216,7 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
                 color: Colors.grey[600],
               ),
             ),
+            
           ],
         ),
       ),
@@ -306,46 +330,46 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
 
   
   /// Показывает диалог с опциями анализа.
-  void _showAnalysisOptions(BuildContext context, DataLoaded<T> state) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Опции анализа'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              const Text('Выберите поля для анализа:'),
-              const SizedBox(height: 16),
-              ...state.numericFields.map((field) => 
-                CheckboxListTile(
-                  title: Text(field),
-                  value: true, // Все поля выбраны по умолчанию
-                  onChanged: (value) {
-                    // Реализация выбора полей для анализа
-                  },
-                )
-              ).toList(),
-            ],
-          ),
+void _showAnalysisOptions(BuildContext context, DataLoaded<T> state) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Опции анализа'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            const Text('Выберите поля для анализа:'),
+            const SizedBox(height: 16),
+            ...state.numericFields.map((field) => 
+              CheckboxListTile(
+                title: Text(field),
+                value: true,
+                onChanged: (value) {
+                  // Реализация выбора полей для анализа
+                },
+              )
+            ).toList(),
+            
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Отмена'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              // Применение выбранных полей для анализа
-              Navigator.of(context).pop();
-            },
-            child: const Text('Применить'),
-          ),
-        ],
       ),
-    );
-  }
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Отмена'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+          child: const Text('Применить'),
+        ),
+      ],
+    ),
+  );
+}
 
   /// Форматирует timestamp для отображения.
   String _formatTimestamp(dynamic timestamp) {

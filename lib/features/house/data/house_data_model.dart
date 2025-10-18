@@ -192,7 +192,9 @@ class HouseDataModel extends DataModel {
       case 'long': return long;
       case 'sqft_living15': return sqftLiving15.toDouble();
       case 'sqft_lot15': return sqftLot15.toDouble();
-      default: return null;
+      default: 
+        print('Unknown field: $field');  // Лог для отладки
+        return 0.0;  // Фикс: Fallback вместо null
     }
   }
 }
