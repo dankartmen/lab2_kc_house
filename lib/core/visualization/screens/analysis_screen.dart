@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../../features/histograms/histogram_config.dart';
 import '../../../features/histograms/histogram_widget.dart';
+import '../../../features/house/data/house_data_model.dart';
 import '../../data/data_bloc.dart';
 import '../../data/data_event.dart';
 import '../../data/data_model.dart';
@@ -11,6 +12,8 @@ import '../../data/data_state.dart';
 import '../charts/correlation_heatmap.dart';
 import '../../../features/box_plots/box_plot_config.dart';
 import '../../../features/box_plots/box_plot_widget.dart';
+import '../charts/correlation_line_chart.dart';
+import '../charts/year_price_line_chart.dart';
 
 /// {@template generic_analysis_screen}
 /// Универсальный экран для анализа данных любого типа.
@@ -102,6 +105,18 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
         children: [
           _buildStatisticsCard(state),
           CorrelationHeatmap(correlationMatrix: state.correlationMatrix),
+          // Новые линейные графики
+          if (state is DataLoaded<HouseDataModel>)
+            Column(
+              children: [
+                CorrelationLineChart(
+                  correlations: state.correlationMatrix?['price'] ?? {},
+                ),
+                YearPriceLineChart(
+                  data: state.data as List<HouseDataModel>,
+                ),
+              ],
+            ),
           if (histogramConfig != null)
             UniversalHistograms<T>(
               data: state.data,
