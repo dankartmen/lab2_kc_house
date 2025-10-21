@@ -6,8 +6,13 @@ import '../../core/analysis/statistics_calculator.dart';
 
 /// Упрощенный и понятный box plot с точками данных
 class UniversalBoxPlot<T extends DataModel> extends StatelessWidget {
+  /// Данные для построения диаграмм
   final List<T> data;
+
+  /// Конфигурация box plot
   final BoxPlotConfig<T> config;
+
+  /// Заголовок виджета
   final String title;
 
   const UniversalBoxPlot({
@@ -37,6 +42,7 @@ class UniversalBoxPlot<T extends DataModel> extends StatelessWidget {
     );
   }
 
+  /// Строит содержимое всех box plot
   Widget _buildBoxPlotsContent() {
     final features = config.features;
     
@@ -50,6 +56,7 @@ class UniversalBoxPlot<T extends DataModel> extends StatelessWidget {
     );
   }
 
+  /// Строит одиночный box plot
   Widget _buildSingleBoxPlot(BoxPlotFeature feature) {
     final values = _extractValues(feature.field, feature.divisor);
     if (values.isEmpty) {
@@ -84,6 +91,7 @@ class UniversalBoxPlot<T extends DataModel> extends StatelessWidget {
     );
   }
 
+  /// Строит заголовок и статистику для box plot
   Widget _buildHeader(String title, DescriptiveStats stats, BoxPlotFeature feature) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -109,6 +117,7 @@ class UniversalBoxPlot<T extends DataModel> extends StatelessWidget {
     );
   }
 
+  /// Строит элемент статистики
   Widget _buildStatItem(String label, String value) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -132,6 +141,7 @@ class UniversalBoxPlot<T extends DataModel> extends StatelessWidget {
     );
   }
 
+  /// Строит box plot с точками данных
   Widget _buildBoxPlotWithPoints(DescriptiveStats stats, List<double> values, BoxPlotFeature feature) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -148,6 +158,7 @@ class UniversalBoxPlot<T extends DataModel> extends StatelessWidget {
     );
   }
 
+  /// Строит информацию о выбросах
   Widget _buildOutlierInfo(DescriptiveStats stats, List<double> values) {
     final outliers = _findOutliers(stats, values);
     
@@ -165,6 +176,7 @@ class UniversalBoxPlot<T extends DataModel> extends StatelessWidget {
     return const SizedBox();
   }
 
+  /// Находит выбросы в данных
   List<double> _findOutliers(DescriptiveStats stats, List<double> values) {
     final iqr = stats.q3 - stats.q1;
     final lowerBound = stats.q1 - 1.5 * iqr;
@@ -173,6 +185,7 @@ class UniversalBoxPlot<T extends DataModel> extends StatelessWidget {
     return values.where((value) => value < lowerBound || value > upperBound).toList();
   }
 
+   /// Извлекает значения для указанного поля
   List<double> _extractValues(String field, double divisor) {
     final values = <double>[];
     for (final item in data) {
@@ -184,6 +197,7 @@ class UniversalBoxPlot<T extends DataModel> extends StatelessWidget {
     return values;
   }
 
+  /// Строит пустой box plot
   Widget _buildEmptyBoxPlot(String message) => Container(
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
@@ -202,9 +216,16 @@ class UniversalBoxPlot<T extends DataModel> extends StatelessWidget {
 
 /// Box plot painter с точками данных
 class _BoxPlotWithPointsPainter extends CustomPainter {
+  /// Статистика данных
   final DescriptiveStats stats;
+
+  /// Значения данных
   final List<double> values;
+
+  /// Конфигурация box plot
   final BoxPlotConfig config;
+
+  /// Признак для отображения
   final BoxPlotFeature feature;
 
   _BoxPlotWithPointsPainter({
@@ -329,6 +350,7 @@ class _BoxPlotWithPointsPainter extends CustomPainter {
     _drawLabel(canvas, xMedian, centerY - 45, config.formatValue(stats.median, feature.field));
   }
 
+  /// Рисует точки данных на canvas
   void _drawDataPoints(Canvas canvas, List<double> points, double Function(double) normalize, Paint paint, double centerY) {
     final random = _JitterRandom(); // Для случайного распределения по вертикали
     
@@ -345,6 +367,7 @@ class _BoxPlotWithPointsPainter extends CustomPainter {
     }
   }
 
+  /// Находит выбросы в данных
   List<double> _findOutliers(DescriptiveStats stats, List<double> values) {
     final iqr = stats.q3 - stats.q1;
     final lowerBound = stats.q1 - 1.5 * iqr;
@@ -353,6 +376,7 @@ class _BoxPlotWithPointsPainter extends CustomPainter {
     return values.where((value) => value < lowerBound || value > upperBound).toList();
   }
 
+  /// Рисует подпись на canvas
   void _drawLabel(Canvas canvas, double x, double y, String text) {
     final textPainter = TextPainter(
       text: TextSpan(

@@ -1,6 +1,10 @@
 import '../../house/data/house_data_model.dart';
 import '../box_plot_config.dart';
 
+/// {@template house_box_plot_config}
+/// Конфигурация box plot для данных о недвижимости.
+/// Определяет параметры для построения диаграмм размаха характеристик домов.
+/// {@endtemplate}
 class HouseBoxPlotConfig implements BoxPlotConfig<HouseDataModel> {
   @override
   List<BoxPlotFeature> get features => [

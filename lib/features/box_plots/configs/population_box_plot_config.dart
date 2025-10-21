@@ -1,6 +1,10 @@
 import '../../population/data/population_model.dart';
 import '../box_plot_config.dart';
 
+/// {@template population_box_plot_config}
+/// Конфигурация box plot для данных о населении.
+/// Определяет параметры для построения диаграмм размаха демографических показателей.
+/// {@endtemplate}
 class PopulationBoxPlotConfig implements BoxPlotConfig<PopulationData> {
   @override
   List<BoxPlotFeature> get features => [

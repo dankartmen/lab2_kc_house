@@ -29,12 +29,16 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
   /// Флаг автоматической загрузки данных при инициализации.
   final bool autoLoad;
 
+  /// Конфигурация для гистограмм
   final HistogramConfig<T>? histogramConfig;
   
+  /// Заголовок для секции гистограмм
   final String? histogramTitle;
 
+  /// Конфигурация для box plot
   final BoxPlotConfig<T>? boxPlotConfig;
 
+  /// Заголовок для секции box plot
   final String? boxPlotTitle;
   
   
@@ -345,46 +349,46 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
 
   
   /// Показывает диалог с опциями анализа.
-void _showAnalysisOptions(BuildContext context, DataLoaded<T> state) {
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Опции анализа'),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            const Text('Выберите поля для анализа:'),
-            const SizedBox(height: 16),
-            ...state.numericFields.map((field) => 
-              CheckboxListTile(
-                title: Text(field),
-                value: true,
-                onChanged: (value) {
-                  // Реализация выбора полей для анализа
-                },
-              )
-            ).toList(),
-            
-          ],
+  void _showAnalysisOptions(BuildContext context, DataLoaded<T> state) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Опции анализа'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              const Text('Выберите поля для анализа:'),
+              const SizedBox(height: 16),
+              ...state.numericFields.map((field) => 
+                CheckboxListTile(
+                  title: Text(field),
+                  value: true,
+                  onChanged: (value) {
+                    // Реализация выбора полей для анализа
+                  },
+                )
+              ).toList(),
+              
+            ],
+          ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Отмена'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text('Применить'),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Отмена'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-          child: const Text('Применить'),
-        ),
-      ],
-    ),
-  );
-}
+    );
+  }
 
   /// Форматирует timestamp для отображения.
   String _formatTimestamp(dynamic timestamp) {

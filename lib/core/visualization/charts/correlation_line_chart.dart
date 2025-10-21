@@ -260,11 +260,18 @@ class CorrelationLineChart extends StatelessWidget {
   }
 }
 
+/// Признак корреляции для отображения на графике
 class CorrelationFeature {
+  /// Полное название признака
   final String name;
+
+  /// Сокращенное название признака для отображения на осях
   final String shortName;
+
+  /// Значение корреляции с ценой
   final double correlation;
 
+  /// Создает объект признака корреляции
   const CorrelationFeature({
     required this.name,
     required this.shortName,

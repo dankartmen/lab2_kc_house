@@ -5,6 +5,7 @@ import '../../../features/house/data/house_data_model.dart';
 
 /// Линейный график влияния года постройки на цену
 class YearPriceLineChart extends StatelessWidget {
+  /// Данные о недвижимости для анализа
   final List<HouseDataModel> data;
 
   const YearPriceLineChart({
@@ -150,6 +151,7 @@ class YearPriceLineChart extends StatelessWidget {
     );
   }
 
+  /// Строит информацию о тренде цен
   Widget _buildTrendInfo(List<YearPriceData> data) {
     if (data.length < 2) return const SizedBox();
     
@@ -178,6 +180,7 @@ class YearPriceLineChart extends StatelessWidget {
     );
   }
 
+  /// Рассчитывает среднюю цену по годам постройки
   List<YearPriceData> _calculateAveragePriceByYear() {
     final yearGroups = <int, List<double>>{};
     
@@ -206,18 +209,22 @@ class YearPriceLineChart extends StatelessWidget {
     return result;
   }
 
+  /// Получает минимальный год из данных
   int _getMinYear(List<YearPriceData> data) {
     return data.map((e) => e.year).reduce((a, b) => a < b ? a : b);
   }
 
+  /// Получает максимальный год из данных
   int _getMaxYear(List<YearPriceData> data) {
     return data.map((e) => e.year).reduce((a, b) => a > b ? a : b);
   }
 
+  /// Получает максимальную цену из данных
   double _getMaxPrice(List<YearPriceData> data) {
     return data.map((e) => e.price).reduce((a, b) => a > b ? a : b);
   }
 
+  /// Рассчитывает интервал цен для сетки графика
   double _calculatePriceInterval(List<YearPriceData> data) {
     final maxPrice = _getMaxPrice(data);
     if (maxPrice <= 100000) return 20000;
@@ -227,11 +234,18 @@ class YearPriceLineChart extends StatelessWidget {
   }
 }
 
+/// Данные о средней цене по году постройки
 class YearPriceData {
+  /// Год постройки
   final int year;
+
+  /// Средняя цена недвижимости за этот год
   final double price;
+
+  /// Количество записей в выборке для этого года
   final int count;
 
+  /// Создает объект данных о цене по году
   const YearPriceData({
     required this.year,
     required this.price,
