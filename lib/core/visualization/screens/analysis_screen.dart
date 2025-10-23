@@ -1,7 +1,11 @@
+import 'dart:math';
+
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-
+import 'package:http/http.dart' as http;  // Новый импорт для API
+import 'dart:convert';  // Новый импорт для JSON
 import '../../../features/histograms/histogram_config.dart';
 import '../../../features/histograms/histogram_widget.dart';
 import '../../../features/house/data/house_data_model.dart';
@@ -14,6 +18,34 @@ import '../../../features/box_plots/box_plot_config.dart';
 import '../../../features/box_plots/box_plot_widget.dart';
 import '../charts/correlation_line_chart.dart';
 import '../charts/year_price_line_chart.dart';
+
+// Новый класс для парсинга метрик из JSON
+class RegressionMetrics {
+  final String model;
+  final Map<String, double> train;
+  final Map<String, double> test;
+  RegressionMetrics.fromJson(Map<String, dynamic> json)
+      : model = json['model'],
+        train = Map<String, double>.from(json['train']),
+        test = Map<String, double>.from(json['test']);
+}
+
+// Данные для чартов
+class ChartsData {
+  final List<double> r2Train, r2Test, mseTrain, mseTest;
+  final List<String> models;
+  final List<double> scatterActual, scatterPred, residualsX, residualsY;
+  ChartsData.fromJson(Map<String, dynamic> json)
+      : r2Train = List<double>.from(json['charts_data']['r2_train']),
+        r2Test = List<double>.from(json['charts_data']['r2_test']),
+        mseTrain = List<double>.from(json['charts_data']['mse_train']),
+        mseTest = List<double>.from(json['charts_data']['mse_test']),
+        models = List<String>.from(json['charts_data']['models']),
+        scatterActual = List<double>.from(json['charts_data']['scatter_actual']),
+        scatterPred = List<double>.from(json['charts_data']['scatter_pred']),
+        residualsX = List<double>.from(json['charts_data']['residuals_x']),
+        residualsY = List<double>.from(json['charts_data']['residuals_y']);
+}
 
 /// {@template generic_analysis_screen}
 /// Универсальный экран для анализа данных любого типа.
@@ -118,6 +150,38 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
                 ),
                 YearPriceLineChart(
                   data: state.data as List<HouseDataModel>,
+                ),
+                // Новая секция: Метрики регрессии (только для HouseDataModel)
+                FutureBuilder<Map<String, dynamic>>(
+                  future: _fetchMetrics(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData) {
+                      var data = snapshot.data!;
+                      var metrics = (data['metrics'] as List).map((m) => RegressionMetrics.fromJson(m)).toList();
+                      var chartsData = ChartsData.fromJson(data);
+                      var conclusions = data['conclusions'];
+                      return Column(
+                        children: [
+                          _buildRegressionDescriptions(data['descriptions']),
+                          _buildMetricsTable(metrics),  // Расширенная таблица
+                          _buildCharts(chartsData),  // Новые графики
+                          _buildConclusions(conclusions),  // Новые выводы
+                        ],
+                      );
+                    } else if (snapshot.hasError) {
+                      return Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          'Ошибка загрузки метрик: ${snapshot.error}',
+                          style: TextStyle(color: Colors.red[600]),
+                        ),
+                      );
+                    }
+                    return const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: CircularProgressIndicator(),
+                    );
+                  },
                 ),
               ],
             ),
@@ -396,5 +460,192 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
       return DateFormat('dd.MM.yyyy HH:mm').format(timestamp);
     }
     return 'Неизвестно';
+  }
+
+  // Асинхронный запрос метрик с FastAPI
+  Future<Map<String, dynamic>> _fetchMetrics() async {
+    final response = await http.get(Uri.parse('http://195.225.111.85:8000/api/metrics'),headers: {'Accept-Charset': 'utf-8'},);
+    if (response.statusCode == 200) {
+      final utf8Body = utf8.decode(response.bodyBytes);
+      return json.decode(utf8Body) as Map<String, dynamic>;
+    } else {
+      throw Exception('Failed to load analysis: ${response.statusCode}');
+    }
+  }
+
+  // Новый метод: Карточка с описаниями моделей
+  Widget _buildRegressionDescriptions(Map<String, dynamic> descriptions) {
+    // Конвертируем в Map<String, String>, чтобы избежать ошибок (предполагаем, что все значения — строки)
+    final Map<String, String> descMap = descriptions.map((key, value) => MapEntry(key, value.toString()));
+    return Card(
+      margin: const EdgeInsets.all(16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Описание моделей регрессии',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            ...descMap.entries.map((e) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Text(
+                '${e.key}: ${e.value}',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontFamilyFallback: ['Roboto', 'Noto Sans', 'Arial Unicode MS'],
+                ),
+              ),
+            )),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Новый метод: Таблица метрик (только validation)
+  Widget _buildMetricsTable(List<RegressionMetrics> metrics) {
+    return Card(
+      margin: const EdgeInsets.all(16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Метрики качества', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,  // Полная ширина для скролла
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  columnSpacing: 80.0,  // Фиксированная ширина между столбцами (увеличьте для видимости)
+                  horizontalMargin: 16.0,  // Отступы слева/справа
+                  dataRowHeight: 60.0,  // Высота строк для лучшего вида
+                  headingRowHeight: 56.0,  // Высота заголовка
+                  columns: const [
+                    DataColumn(label: Text('Модель', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('Train R²', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('Test R²', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('Train MAE', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('Test MAE', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('Train MSE', style: TextStyle(fontWeight: FontWeight.bold))),  // Явно
+                    DataColumn(label: Text('Test MSE', style: TextStyle(fontWeight: FontWeight.bold))),  // Явно
+                  ],
+                  rows: metrics.map((m) {
+                    // Форматирование: для MSE используем научную нотацию, если >1e6 (цены домов большие)
+                    String formatLarge(double val) => val > 1e6 ? '${(val).toStringAsFixed(2)}' : val.toStringAsFixed(2);
+                    
+                    return DataRow(cells: [
+                      DataCell(Text(m.model, style: const TextStyle(fontWeight: FontWeight.w500))),
+                      DataCell(Text(m.train['R2']?.toStringAsFixed(4) ?? 'N/A')),
+                      DataCell(Text(m.test['R2']?.toStringAsFixed(4) ?? 'N/A')),
+                      DataCell(Text(m.train['MAE']?.toStringAsFixed(2) ?? 'N/A')),
+                      DataCell(Text(m.test['MAE']?.toStringAsFixed(2) ?? 'N/A')),
+                      DataCell(Text(formatLarge(m.train['MSE'] ?? 0))),  // MSE с форматированием
+                      DataCell(Text(formatLarge(m.test['MSE'] ?? 0))),  // MSE с форматированием
+                    ]);
+                  }).toList(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  // Новые графики (4 subplot как в примере; используем SizedBox для layout)
+  Widget _buildCharts(ChartsData data) {
+    return Card(
+      margin: const EdgeInsets.all(16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            const Text('Визуализация результатов', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 200,
+              child: BarChart(BarChartData(  // R² bar
+                barGroups: [
+                  for (int i = 0; i < data.models.length; i++)
+                    BarChartGroupData(x: i, barRods: [
+                      BarChartRodData(toY: data.r2Train[i], color: Colors.blue, width: 16),
+                      BarChartRodData(toY: data.r2Test[i], color: Colors.red, width: 16),
+                    ]),
+                ],
+                titlesData: FlTitlesData(show: true, bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (value, meta) => Text(data.models[value.toInt()])))),
+              )),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 200,
+              child: BarChart(BarChartData(  // MSE bar
+                barGroups: [
+                  for (int i = 0; i < data.models.length; i++)
+                    BarChartGroupData(x: i, barRods: [
+                      BarChartRodData(toY: data.mseTrain[i], color: Colors.blue, width: 16),
+                      BarChartRodData(toY: data.mseTest[i], color: Colors.red, width: 16),
+                    ]),
+                ],
+                titlesData: FlTitlesData(show: true, bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (value, meta) => Text(data.models[value.toInt()])))),
+              )),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 200,
+              child: ScatterChart(ScatterChartData(  // Actual vs Predicted (scatter)
+                minX: data.scatterActual.reduce(min),
+                minY: data.scatterPred.reduce(min),
+                maxX: data.scatterActual.reduce(max),
+                maxY: data.scatterPred.reduce(max),
+                scatterSpots: [
+                  for (int i = 0; i < data.scatterActual.length; i++)
+                    ScatterSpot(data.scatterActual[i], data.scatterPred[i], show: true),
+                ],
+              )),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 200,
+              child: LineChart(LineChartData(  // Residuals (line/scatter)
+                lineBarsData: [LineChartBarData(spots: [
+                  for (int i = 0; i < data.residualsX.length; i++)
+                    FlSpot(data.residualsX[i], data.residualsY[i]),
+                ])],
+                titlesData: const FlTitlesData(show: true),
+              )),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Карточка выводов
+  Widget _buildConclusions(Map<String, dynamic> conclusions) {
+    return Card(
+      margin: const EdgeInsets.all(16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Итоговые выводы', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            const Text('1. Влияние характеристик на стоимость:'),
+            ...List<String>.from(conclusions['influence']).map((s) => Text(s)),
+            const SizedBox(height: 8),
+            Text('2. Результаты моделирования:'),
+            Text(conclusions['best_model']),
+            const SizedBox(height: 8),
+            const Text('3. Качество моделей:'),
+            ...List<String>.from(conclusions['quality']).map((s) => Text(s)),
+          ],
+        ),
+      ),
+    );
   }
 }
