@@ -1,5 +1,5 @@
 import 'dart:math';
-
+import 'dart:ui' as ui;
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -28,6 +28,89 @@ class RegressionMetrics {
       : model = json['model'],
         train = Map<String, double>.from(json['train']),
         test = Map<String, double>.from(json['test']);
+}
+
+class DashedLinePainter extends CustomPainter {
+  final Offset start;  // Data coords
+  final Offset end;    // Data coords
+  final double minX, maxX, minY, maxY;  // Data range
+  final double marginLeft, marginBottom, marginTop, marginRight;  // Отступы для чарта (px)
+  final double strokeWidth;
+  final Color color;
+
+  DashedLinePainter({
+    required this.start,
+    required this.end,
+    required this.minX,
+    required this.maxX,
+    required this.minY,
+    required this.maxY,
+    this.marginLeft = 50.0,    // Для bottom titles (x-axis)
+    this.marginBottom = 30.0,  // Для left titles (y-axis)
+    this.marginTop = 10.0,     // Для top
+    this.marginRight = 10.0,   // Для right
+    this.strokeWidth = 2.0,
+    this.color = Colors.red,
+  });
+
+  @override
+  void paint(ui.Canvas canvas, ui.Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke;
+
+    // Эффективная область рисования (минус margins)
+    final contentWidth = size.width - marginLeft - marginRight;
+    final contentHeight = size.height - marginTop - marginBottom;
+
+    // Scale (учитываем, что Y может быть отрицательным)
+    final scaleX = contentWidth / (maxX - minX);
+    final scaleY = contentHeight / (max(maxY, 0) - min(minY, 0));  // Abs range для Y
+
+    // Функция dataToPixel с margins и инверсией Y
+    Offset dataToPixel(Offset dataPoint) {
+      final pixelX = marginLeft + (dataPoint.dx - minX) * scaleX;
+      final pixelY = size.height - marginBottom - (dataPoint.dy - minY) * scaleY;  // Инверт Y
+      return Offset(pixelX, pixelY);
+    }
+
+    final pixelStart = dataToPixel(start);
+    final pixelEnd = dataToPixel(end);
+
+    // Dashed drawing (как раньше)
+    const dashWidth = 10.0;
+    const dashSpace = 5.0;
+
+    final dx = pixelEnd.dx - pixelStart.dx;
+    final dy = pixelEnd.dy - pixelStart.dy;
+    final length = sqrt(dx * dx + dy * dy);
+    if (length == 0) return;
+
+    final angle = atan2(dy, dx);
+
+    var currentOffset = 0.0;
+    while (currentOffset < length) {
+      final dashStart = currentOffset;
+      final dashEnd = min(currentOffset + dashWidth, length);
+
+      final startX = pixelStart.dx + cos(angle) * dashStart;
+      final startY = pixelStart.dy + sin(angle) * dashStart;
+      final endX = pixelStart.dx + cos(angle) * dashEnd;
+      final endY = pixelStart.dy + sin(angle) * dashEnd;
+
+      canvas.drawLine(
+        Offset(startX, startY),
+        Offset(endX, endY),
+        paint,
+      );
+
+      currentOffset += dashWidth + dashSpace;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 // Данные для чартов
@@ -163,9 +246,9 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
                       return Column(
                         children: [
                           _buildRegressionDescriptions(data['descriptions']),
-                          _buildMetricsTable(metrics),  // Расширенная таблица
-                          _buildCharts(chartsData),  // Новые графики
-                          _buildConclusions(conclusions),  // Новые выводы
+                          _buildMetricsTable(metrics),
+                          _buildCharts(chartsData),  
+                          _buildConclusions(conclusions), 
                         ],
                       );
                     } else if (snapshot.hasError) {
@@ -596,27 +679,72 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
             const SizedBox(height: 16),
             SizedBox(
               height: 200,
-              child: ScatterChart(ScatterChartData(  // Actual vs Predicted (scatter)
-                minX: data.scatterActual.reduce(min),
-                minY: data.scatterPred.reduce(min),
-                maxX: data.scatterActual.reduce(max),
-                maxY: data.scatterPred.reduce(max),
-                scatterSpots: [
-                  for (int i = 0; i < data.scatterActual.length; i++)
-                    ScatterSpot(data.scatterActual[i], data.scatterPred[i], show: true),
+              child: Stack(
+                children: [
+                  ScatterChart(  // Actual vs Predicted
+                    ScatterChartData(
+                      scatterSpots: [
+                        for (int i = 0; i < data.scatterActual.length; i++)
+                          ScatterSpot(data.scatterActual[i], data.scatterPred[i], show: true),
+                      ],
+                      minX: data.scatterActual.reduce(min),
+                      maxX: data.scatterActual.reduce(max),
+                      minY: data.scatterPred.reduce(min),
+                      maxY: data.scatterPred.reduce(max),
+                      titlesData: FlTitlesData(show: true),
+                      gridData: FlGridData(show: true),
+                      borderData: FlBorderData(show: true),
+                    )
+                  ),
                 ],
-              )),
+              ),
             ),
             const SizedBox(height: 16),
             SizedBox(
               height: 200,
-              child: LineChart(LineChartData(  // Residuals (line/scatter)
-                lineBarsData: [LineChartBarData(spots: [
-                  for (int i = 0; i < data.residualsX.length; i++)
-                    FlSpot(data.residualsX[i], data.residualsY[i]),
-                ])],
-                titlesData: const FlTitlesData(show: true),
-              )),
+              child: Stack(
+                children: [
+                  ScatterChart( // Residuals 
+                    ScatterChartData(
+                      scatterSpots: [
+                        for (int i = 0; i < data.residualsX.length; i++)
+                          ScatterSpot(
+                            data.residualsX[i],
+                            data.residualsY[i],
+                            show: true,
+                          ),
+                      ],
+                      minX: data.residualsX.reduce(min),
+                      maxX: data.residualsX.reduce(max),
+                      minY: data.residualsY.reduce(min),
+                      maxY: data.residualsY.reduce(max),
+                      titlesData: FlTitlesData(show: true),
+                      gridData: FlGridData(show: true),
+                      borderData: FlBorderData(show: true),
+                      clipData: FlClipData.none(),
+                    ),
+                  ),
+                  // Dashed линия y=0
+                  CustomPaint(
+                    size: const Size(double.infinity, 200),
+                    painter: DashedLinePainter(
+                      start: Offset(
+                        data.residualsX.reduce(min),  // minX
+                        0.0,  // y=0
+                      ),
+                      end: Offset(
+                        data.residualsX.reduce(max),  // maxX
+                        0.0,  // y=0
+                      ),
+                      minX: data.residualsX.reduce(min),
+                      maxX: data.residualsX.reduce(max),
+                      minY: data.residualsY.reduce(min),
+                      maxY: data.residualsY.reduce(max),
+                      marginBottom: 25
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
