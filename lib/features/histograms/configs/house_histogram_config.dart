@@ -30,7 +30,24 @@ class HouseHistogramConfig implements HistogramConfig<HouseDataModel> {
     final maxVal = values.reduce((a, b) => a > b ? a : b);
     final binWidth = (maxVal - minVal) / totalBins;
     final binStart = minVal + binIndex * binWidth;
+    final binEnd = binStart + binWidth;
     
-    return '${binStart.toInt()}';
+    // Для целочисленных данных показываем целые диапазоны
+    if (_isIntegerData(values)) {
+      final start = binIndex == 0 ? binStart.floor() : binStart.ceil();
+      final end = binIndex == totalBins - 1 ? binEnd.ceil() : binEnd.floor();
+      return '$start-${end - 1}';
+    }
+    
+    // Для дробных данных показываем с одним знаком после запятой
+    return '${binStart.toStringAsFixed(1)}-${binEnd.toStringAsFixed(1)}';
+  }
+  
+  bool _isIntegerData(List<double> values) {
+    // Проверяем, являются ли значения целыми числами
+    for (final value in values.take(100)) { // Проверяем первые 100 значений
+      if (value % 1 != 0) return false;
+    }
+    return true;
   }
 }

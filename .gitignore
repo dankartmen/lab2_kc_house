@@ -86,3 +86,6 @@ Desktop.ini
 # Environment
 .env
 .env.local
+
+# Assets
+assets/creditcard.csv

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;  // Новый импорт для API
+import 'package:lab2_kc_house/features/credit_card/data/credit_card_fraud_data_model.dart';
 import 'dart:convert';  // Новый импорт для JSON
 import '../../../features/histograms/histogram_config.dart';
 import '../../../features/histograms/histogram_widget.dart';
@@ -223,7 +224,8 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
       child: Column(
         children: [
           _buildStatisticsCard(state),
-          CorrelationHeatmap(correlationMatrix: state.correlationMatrix),
+          if (state is! DataLoaded<CreditCardFraudDataModel>)
+            CorrelationHeatmap(correlationMatrix: state.correlationMatrix),
           // Новые линейные графики
           if (state is DataLoaded<HouseDataModel>)
             Column(

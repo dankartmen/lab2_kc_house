@@ -32,3 +32,4 @@ flutter:
   assets:
     - assets/kc_house_data.csv
     - assets/world_population.csv
+    - assets/creditcard.csv
