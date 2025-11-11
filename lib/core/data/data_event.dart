@@ -29,3 +29,11 @@ class AnalyzeDataEvent extends DataEvent {
   /// {@macro analyze_data_event}
   const AnalyzeDataEvent({required this.fields});
 }
+
+/// {@template load_fraud_analysis_event}
+/// Событие загрузки анализа мошенничества с сервера.
+/// {@endtemplate}
+class LoadFraudAnalysisEvent extends DataEvent {
+  /// {@macro load_fraud_analysis_event}
+  const LoadFraudAnalysisEvent();
+}

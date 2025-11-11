@@ -1,3 +1,4 @@
+import '../../features/credit_card/data/fraud_analysis_model.dart';
 import 'data_model.dart';
 
 /// {@template data_state}
@@ -42,12 +43,16 @@ class DataLoaded<T extends DataModel> extends DataState {
   /// Дополнительные метаданные анализа.
   final Map<String, dynamic> metadata;
 
+  /// Анализ мошенничества с кредитными картами (специфично для fraud; опционально).
+  final FraudAnalysisModel? fraudAnalysis;
+
   /// {@macro data_loaded}
   const DataLoaded({
     required this.data,
     required this.numericFields,
     required this.correlationMatrix,
     this.metadata = const {},
+    this.fraudAnalysis,
   });
 
   /// Создает копию объекта с обновленными полями.
@@ -56,7 +61,8 @@ class DataLoaded<T extends DataModel> extends DataState {
   /// - [data] - новые данные (опционально),
   /// - [numericFields] - новые числовые поля (опционально),
   /// - [correlationMatrix] - новая матрица корреляции (опционально),
-  /// - [metadata] - новые метаданные (опционально).
+  /// - [metadata] - новые метаданные (опционально),
+  /// - [fraudAnalysis] - новый анализ мошенничества (опционально).
   /// 
   /// Возвращает:
   /// - [DataLoaded<T>] новый объект с обновленными полями.
@@ -65,12 +71,14 @@ class DataLoaded<T extends DataModel> extends DataState {
     List<String>? numericFields,
     Map<String, Map<String, double>>? correlationMatrix,
     Map<String, dynamic>? metadata,
+    FraudAnalysisModel? fraudAnalysis,
   }) {
     return DataLoaded<T>(
       data: data ?? this.data,
       numericFields: numericFields ?? this.numericFields,
       correlationMatrix: correlationMatrix ?? this.correlationMatrix,
       metadata: metadata ?? this.metadata,
+      fraudAnalysis: fraudAnalysis ?? this.fraudAnalysis,
     );
   }
 
@@ -81,7 +89,8 @@ class DataLoaded<T extends DataModel> extends DataState {
         other.data == data &&
         other.numericFields == numericFields &&
         other.correlationMatrix == correlationMatrix &&
-        other.metadata == metadata;
+        other.metadata == metadata &&
+        other.fraudAnalysis == fraudAnalysis;
   }
 
   @override
@@ -89,7 +98,8 @@ class DataLoaded<T extends DataModel> extends DataState {
       data.hashCode ^
       numericFields.hashCode ^
       correlationMatrix.hashCode ^
-      metadata.hashCode;
+      metadata.hashCode ^
+      fraudAnalysis.hashCode;
 }
 
 /// {@template data_error}

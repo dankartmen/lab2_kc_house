@@ -51,11 +51,16 @@ class HomeScreen extends StatelessWidget {
             ElevatedButton(
               onPressed: (){
                 Navigator.push(
-                  context, 
+                  context,
                   MaterialPageRoute(
-                    builder: (context)=> BlocProvider(
-                      create: (context)=> CreditCardFraudBloc(), 
-                      child: CreditCardFraudAnalysisScreen(),
+                    builder: (context) => BlocProvider(
+                      create: (_) => CreditCardFraudBloc(),
+                      child: GenericAnalysisScreen<CreditCardFraudDataModel>(
+                        bloc: CreditCardFraudBloc(),
+                        title: 'Анализ мошенничества с картами',
+                        autoLoad: true,
+                        extraFraudAnalysisWidget: const FraudAnalysisContentWidget(),  // Встраиваем анализ
+                      ),
                     ),
                   ),
                 );
