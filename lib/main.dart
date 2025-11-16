@@ -5,6 +5,10 @@ import 'package:lab2_kc_house/features/credit_card/bloc/credit_card_fraud_bloc.d
 import 'package:lab2_kc_house/features/credit_card/data/credit_card_fraud_data_model.dart';
 
 import 'core/visualization/screens/analysis_screen.dart';
+import 'features/heart_attack/bloc/heart_attack_bloc.dart';
+import 'features/heart_attack/box_plots/heart_attack_box_plot_config.dart';
+import 'features/heart_attack/data/heart_attack_data_model.dart';
+import 'features/heart_attack/histograms/heart_attack_histogram_config.dart';
 import 'features/histograms/configs/house_histogram_config.dart';
 import 'features/histograms/configs/population_histogram_config.dart';
 import 'features/house/bloc/house_bloc.dart';
@@ -48,6 +52,25 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => BlocProvider(
+                      create: (_) => HeartAttackBloc(),
+                      child: const HeartAttackAnalysisScreen(),
+                    ),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+                textStyle: const TextStyle(fontSize: 18),
+              ),
+              child: const Text('Анализ риска сердечных приступов'),
+            ),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: (){
                 Navigator.push(
@@ -172,6 +195,27 @@ class CreditCardFraudAnalysisScreen extends StatelessWidget {
       //histogramTitle: 'Гистограммы распределения цен и площадей',
       //boxPlotConfig: HouseBoxPlotConfig(),
       //boxPlotTitle: 'Диаграмма размаха',
+      autoLoad: true,
+    );
+  }
+}
+
+/// {@template heart_attack_analysis_screen}
+/// Специализированный экран для анализа данных о рисках сердечных приступов.
+/// {@endtemplate}
+class HeartAttackAnalysisScreen extends StatelessWidget {
+  /// {@macro heart_attack_analysis_screen}
+  const HeartAttackAnalysisScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return GenericAnalysisScreen<HeartAttackDataModel>(
+      bloc: context.read<HeartAttackBloc>(),
+      title: 'Анализ риска сердечных приступов',
+      histogramConfig: HeartAttackHistogramConfig(),
+      histogramTitle: 'Гистограммы распределения факторов риска',
+      boxPlotConfig: HeartAttackBoxPlotConfig(),
+      boxPlotTitle: 'Диаграммы размаха по группам',
       autoLoad: true,
     );
   }
