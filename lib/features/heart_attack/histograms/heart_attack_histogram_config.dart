@@ -10,6 +10,7 @@ class HeartAttackHistogramConfig extends HistogramConfig<HeartAttackDataModel> {
         HistogramFeature('Индекс массы тела (BMI)', 'bmi', 1.0, ''),
         HistogramFeature('Уровень стресса', 'stressLevel', 1.0, 'из 10'),
         HistogramFeature('Часы сна в день', 'sleepHoursPerDay', 1.0, 'ч'),
+        HistogramFeature('Частота сердцебиения', 'heartRate', 1, 'уд.мин')
       ];
 
   @override

@@ -10,6 +10,8 @@ import '../../../features/credit_card/bloc/credit_card_fraud_bloc.dart';
 import '../../../features/histograms/histogram_config.dart';
 import '../../../features/histograms/histogram_widget.dart';
 import '../../../features/house/data/house_data_model.dart';
+import '../../../features/pair_plots/pair_plot_config.dart';
+import '../../../features/pair_plots/pair_plot_widget.dart';
 import '../../data/data_bloc.dart';
 import '../../data/data_event.dart';
 import '../../data/data_model.dart';
@@ -159,6 +161,12 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
   /// Заголовок для секции box plot
   final String? boxPlotTitle;
 
+  /// Конфигурация для pair plots
+  final PairPlotConfig<T>? pairPlotConfig;
+
+  /// Заголовок для секции pair plots
+  final String? pairPlotTitle;
+  
   /// Дополнительный виджет, который можно вставить в контент анализа.
   /// Используется для встраивания специализированных панелей внутрь общего экрана анализа.
   final Widget? extraAnalysisWidget;
@@ -179,6 +187,8 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
     this.boxPlotTitle,
     this.extraAnalysisWidget,
     this.extraFraudAnalysisWidget,
+    this.pairPlotConfig, 
+    this.pairPlotTitle,
   });
 
   @override
@@ -276,6 +286,30 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
                     Text(boxPlotTitle!, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),
                     UniversalBoxPlot(data: state.data, config: boxPlotConfig!, title: title)
+                  ],
+                ),
+              ),
+            ),
+          );
+          children.add(const SizedBox(height: 16));
+        }
+
+        // Pair plots, если конфиг предоставлен
+        if (pairPlotConfig != null && pairPlotTitle != null) {
+          children.add(
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(pairPlotTitle!, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    UniversalPairPlots<T>(
+                      data: loadedState.data,
+                      config: pairPlotConfig!,
+                      title: pairPlotTitle!,
+                    ),
                   ],
                 ),
               ),

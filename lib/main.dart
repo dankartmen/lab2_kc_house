@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lab2_kc_house/features/box_plots/configs/house_box_plot_config.dart';
 import 'package:lab2_kc_house/features/credit_card/bloc/credit_card_fraud_bloc.dart';
 import 'package:lab2_kc_house/features/credit_card/data/credit_card_fraud_data_model.dart';
+import 'package:lab2_kc_house/features/heart_attack/pair_plots/heart_attack_pair_plot_config.dart';
 
 import 'core/visualization/screens/analysis_screen.dart';
 import 'features/heart_attack/bloc/heart_attack_bloc.dart';
@@ -216,6 +217,8 @@ class HeartAttackAnalysisScreen extends StatelessWidget {
       histogramTitle: 'Гистограммы распределения факторов риска',
       boxPlotConfig: HeartAttackBoxPlotConfig(),
       boxPlotTitle: 'Диаграммы размаха по группам',
+      pairPlotConfig: HeartAttackPairPlotConfig(),
+      pairPlotTitle: 'Парные диаграммы',
       autoLoad: true,
     );
   }
