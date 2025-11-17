@@ -1,4 +1,3 @@
-import '../../../core/data/data_model.dart';
 import '../../box_plots/box_plot_config.dart';
 import '../data/heart_attack_data_model.dart';
 

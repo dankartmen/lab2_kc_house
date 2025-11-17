@@ -255,7 +255,7 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
                   children: [
                     Text(histogramTitle!, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),
-                    
+                    UniversalHistograms(data: state.data, config: histogramConfig!, title: title)
                   ],
                 ),
               ),
@@ -275,7 +275,7 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
                   children: [
                     Text(boxPlotTitle!, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),
-                    
+                    UniversalBoxPlot(data: state.data, config: boxPlotConfig!, title: title)
                   ],
                 ),
               ),
