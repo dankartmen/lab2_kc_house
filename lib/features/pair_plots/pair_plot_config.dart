@@ -1,60 +1,44 @@
+import 'dart:ui';
+
 import '../../core/data/data_model.dart';
+import '../heart_attack/data/heart_attack_data_model.dart';
 
 /// {@template pair_plot_config}
-/// Конфигурация для парных диаграмм (scatter plots).
-/// Определяет пары полей для визуализации корреляций.
+/// Конфигурация для матрицы парных диаграмм (pair plots).
 /// {@endtemplate}
 abstract class PairPlotConfig<T extends DataModel> {
-  /// Список пар признаков для scatter plots.
+  /// Список признаков для матрицы pair plots
   List<PairPlotFeature> get features;
 
-  /// Извлекает значение для поля из объекта данных.
-  /// 
-  /// Принимает:
-  /// - [data] - объект данных,
-  /// - [field] - имя поля для извлечения.
-  /// 
-  /// Возвращает:
-  /// - [double?] числовое значение или null если значение недоступно.
+  /// Извлекает значение для поля из объекта данных
   double? extractValue(T data, String field);
 
-  /// Форматирует метку для осей.
-  /// 
-  /// Принимает:
-  /// - [value] - числовое значение,
-  /// - [field] - имя поля для контекста форматирования.
-  /// 
-  /// Возвращает:
-  /// - [String] отформатированную строку значения.
+  /// Форматирует метку для осей
   String formatValue(double value, String field);
+  
+  /// Получает цвет точки на основе данных (для окрашивания по категориям)
+  Color? getPointColor(T data, String colorField);
 }
 
 /// {@template pair_plot_feature}
-/// Пара признаков для scatter plot.
-/// Определяет параметры одной пары для диаграммы рассеяния.
+/// Признак для pair plot матрицы
 /// {@endtemplate}
 class PairPlotFeature {
-  /// Заголовок пары для отображения.
-  final String title;
-
-  /// Поле для оси X.
-  final String fieldX;
-
-  /// Поле для оси Y.
-  final String fieldY;
-
-  /// Делитель для значений X (напр. 1e6 для миллионов).
-  final double divisorX;
-
-  /// Делитель для значений Y.
-  final double divisorY;
+  /// Поле данных
+  final String field;
+  
+  /// Отображаемое имя
+  final String displayName;
+  
+  /// Делитель для значений
+  final double divisor;
 
   /// {@macro pair_plot_feature}
   const PairPlotFeature(
-    this.title,
-    this.fieldX,
-    this.fieldY, {
-    this.divisorX = 1.0,
-    this.divisorY = 1.0,
+    this.field,
+    this.displayName, {
+    this.divisor = 1.0,
   });
+
+  
 }

@@ -10,8 +10,10 @@ import '../../../features/credit_card/bloc/credit_card_fraud_bloc.dart';
 import '../../../features/histograms/histogram_config.dart';
 import '../../../features/histograms/histogram_widget.dart';
 import '../../../features/house/data/house_data_model.dart';
+import '../../../features/pair_plots/grouped_pair_plot_config.dart';
 import '../../../features/pair_plots/pair_plot_config.dart';
 import '../../../features/pair_plots/pair_plot_widget.dart';
+import '../../../features/pair_plots/tabbed_pair_plots.dart';
 import '../../data/data_bloc.dart';
 import '../../data/data_event.dart';
 import '../../data/data_model.dart';
@@ -296,6 +298,9 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
 
         // Pair plots, если конфиг предоставлен
         if (pairPlotConfig != null && pairPlotTitle != null) {
+          print('=== PairPlotConfig type: ${pairPlotConfig.runtimeType} ===');
+          print('=== Is GroupedHeartAttackPairPlotConfig: ${pairPlotConfig is GroupedHeartAttackPairPlotConfig} ===');
+          
           children.add(
             Card(
               child: Padding(
@@ -305,17 +310,28 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
                   children: [
                     Text(pairPlotTitle!, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),
-                    UniversalPairPlots<T>(
+                    // Временно показываем информацию о конфигурации
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      color: Colors.yellow[100],
+                      child: Column(
+                        children: [
+                          Text('Config type: ${pairPlotConfig.runtimeType}'),
+                          Text('Features count: ${pairPlotConfig?.features.length}'),
+                          Text('Is grouped: ${pairPlotConfig is GroupedHeartAttackPairPlotConfig}'),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TabbedPairPlots<T>(
                       data: loadedState.data,
                       config: pairPlotConfig!,
-                      title: pairPlotTitle!,
                     ),
                   ],
                 ),
               ),
             ),
           );
-          children.add(const SizedBox(height: 16));
         }
 
         // Дополнительный виджет анализа (общий)

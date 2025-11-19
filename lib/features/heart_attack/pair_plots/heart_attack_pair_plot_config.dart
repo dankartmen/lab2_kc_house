@@ -1,15 +1,20 @@
+
+import 'package:flutter/material.dart';
+
+import '../../pair_plots/grouped_pair_plot_config.dart';
 import '../../pair_plots/pair_plot_config.dart';
 import '../data/heart_attack_data_model.dart';
 
-/// Конфигурация pair plots для датасета о сердечных приступах.
-class HeartAttackPairPlotConfig extends PairPlotConfig<HeartAttackDataModel> {
+class HeartAttackPairPlotConfig extends GroupedHeartAttackPairPlotConfig {
   @override
   List<PairPlotFeature> get features => [
-        PairPlotFeature('Возраст vs Холестерин', 'age', 'cholesterol', divisorX: 1.0, divisorY: 1.0),
-        PairPlotFeature('BMI vs Риск', 'bmi', 'heartAttackRisk', divisorX: 1.0, divisorY: 1.0),
-        PairPlotFeature('Стресс vs Сон', 'stressLevel', 'sleepHoursPerDay', divisorX: 1.0, divisorY: 1.0),
-        PairPlotFeature('Доход vs Активность', 'income', 'physicalActivityDaysPerWeek', divisorX: 1000.0, divisorY: 1.0),  // Доход в тыс.
-      ];
+    PairPlotFeature('age', 'Возраст'),
+    PairPlotFeature('cholesterol', 'Холестерин'),
+    PairPlotFeature('bmi', 'ИМТ'),
+    PairPlotFeature('income', 'Доход', divisor: 1000.0),
+    PairPlotFeature('physicalActivityDaysPerWeek', 'Активность'),
+    PairPlotFeature('stressLevel', 'Стресс'),
+  ];
 
   @override
   double? extractValue(HeartAttackDataModel data, String field) {
@@ -18,7 +23,17 @@ class HeartAttackPairPlotConfig extends PairPlotConfig<HeartAttackDataModel> {
 
   @override
   String formatValue(double value, String field) {
-    if (field == 'income') return '${(value / 1000).toStringAsFixed(0)}k';  // Формат для дохода
-    return value.toStringAsFixed(field == 'bmi' ? 1 : 0);
+    if (field == 'income') return '${value.toStringAsFixed(0)}k';
+    if (field == 'bmi') return value.toStringAsFixed(1);
+    return value.toStringAsFixed(0);
+  }
+  
+  @override
+  Color? getPointColor(HeartAttackDataModel data, String colorField) {
+    // Окрашиваем точки по риску сердечного приступа
+    if (colorField == 'heartAttackRisk') {
+      return data.heartAttackRisk == 1 ? Colors.red : Colors.blue;
+    }
+    return null;
   }
 }
