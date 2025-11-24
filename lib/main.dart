@@ -9,6 +9,7 @@ import 'core/visualization/screens/analysis_screen.dart';
 import 'features/heart_attack/bloc/heart_attack_bloc.dart';
 import 'features/heart_attack/box_plots/heart_attack_box_plot_config.dart';
 import 'features/heart_attack/data/heart_attack_data_model.dart';
+import 'features/heart_attack/heart_attack_analysis_widget.dart';
 import 'features/heart_attack/histograms/heart_attack_histogram_config.dart';
 import 'features/histograms/configs/house_histogram_config.dart';
 import 'features/histograms/configs/population_histogram_config.dart';
@@ -217,9 +218,9 @@ class HeartAttackAnalysisScreen extends StatelessWidget {
       histogramTitle: 'Гистограммы распределения факторов риска',
       boxPlotConfig: HeartAttackBoxPlotConfig(),
       boxPlotTitle: 'Диаграммы размаха по группам',
-      pairPlotConfig: HeartAttackPairPlotConfig(),
       pairPlotTitle: 'Парные диаграммы',
       autoLoad: true,
+      extraAnalysisWidget: const HeartAttackAnalysisWidget(),
     );
   }
 }

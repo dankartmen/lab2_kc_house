@@ -37,3 +37,7 @@ class LoadFraudAnalysisEvent extends DataEvent {
   /// {@macro load_fraud_analysis_event}
   const LoadFraudAnalysisEvent();
 }
+
+class LoadAnalysisEvent extends DataEvent {
+  const LoadAnalysisEvent();
+}

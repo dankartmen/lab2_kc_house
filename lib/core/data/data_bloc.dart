@@ -18,6 +18,7 @@ abstract class GenericBloc<T extends DataModel> extends Bloc<DataEvent, DataStat
   GenericBloc({required this.dataSource}) : super(DataInitial()) {
     on<LoadDataEvent>(_onLoadData);
     on<AnalyzeDataEvent>(_onAnalyzeData);
+    on<LoadAnalysisEvent>(_onLoadAnalysis);
   }
 
   /// Обработчик события загрузки данных.
@@ -102,6 +103,33 @@ abstract class GenericBloc<T extends DataModel> extends Bloc<DataEvent, DataStat
     }
   }
 
+   /// Обработчик события загрузки анализа
+  Future<void> _onLoadAnalysis(LoadAnalysisEvent event, Emitter<DataState> emit) async {
+    final currentState = state;
+    if (currentState is DataLoaded<T>) {
+      try {
+        final analysisData = await loadAnalysisData();
+        emit(currentState.copyWith(
+          metadata: {
+            ...currentState.metadata,
+            'heart_attack_analysis': analysisData,
+            'analysisLoadedAt': DateTime.now(),
+          },
+        ));
+      } catch (e) {
+        // Не прерываем основное состояние, просто логируем ошибку
+        print('Error loading analysis: $e');
+        // Можно добавить уведомление об ошибке в метаданные
+        emit(currentState.copyWith(
+          metadata: {
+            ...currentState.metadata,
+            'analysisError': e.toString(),
+          },
+        ));
+      }
+    }
+  }
+  
   /// Извлекает числовые поля из данных.
   /// 
   /// Принимает:
@@ -114,5 +142,11 @@ abstract class GenericBloc<T extends DataModel> extends Bloc<DataEvent, DataStat
   List<String> _extractNumericFields(List<T> data) {
     if (data.isEmpty) return [];
     return data.first.getNumericFields();
+  }
+
+  /// Загружает дополнительные аналитические данные
+  /// Переопределяется в конкретных реализациях BLoC
+  Future<Map<String, dynamic>> loadAnalysisData() async {
+    return {};
   }
 }
