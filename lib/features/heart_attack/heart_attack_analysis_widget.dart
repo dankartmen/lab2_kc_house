@@ -78,8 +78,13 @@ class HeartAttackAnalysisWidget extends StatelessWidget {
       ),
     );
   }
-  
+
   Widget _buildAnalysisContent(Map<String, dynamic> analysis) {
+    // Защитная проверка структуры данных
+    if (analysis.containsKey('error')) {
+      return _buildErrorState(analysis['error']);
+    }
+
     return Card(
       margin: const EdgeInsets.all(16),
       child: Padding(
@@ -92,13 +97,25 @@ class HeartAttackAnalysisWidget extends StatelessWidget {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            _buildDatasetInfo(analysis['dataset_info']),
+            
+            // Безопасное построение компонентов с проверками
+            if (analysis['dataset_info'] != null) 
+              _buildDatasetInfo(analysis['dataset_info']),
+            
             const SizedBox(height: 16),
-            _buildPreprocessingInfo(analysis['preprocessing_info']),
+            
+            if (analysis['preprocessing_info'] != null) 
+              _buildPreprocessingInfo(analysis['preprocessing_info']),
+            
             const SizedBox(height: 16),
-            _buildModelsResults(analysis['models_results']),
+            
+            if (analysis['models_results'] != null) 
+              _buildModelsResults(analysis['models_results']),
+            
             const SizedBox(height: 16),
-            _buildFeatureImportance(analysis['models_results']),
+            
+            if (analysis['models_results'] != null) 
+              _buildFeatureImportance(analysis['models_results']),
           ],
         ),
       ),

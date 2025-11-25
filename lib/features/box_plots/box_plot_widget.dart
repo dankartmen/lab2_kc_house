@@ -147,7 +147,7 @@ class UniversalBoxPlot<T extends DataModel> extends StatelessWidget {
       builder: (context, constraints) {
         return CustomPaint(
           size: Size(constraints.maxWidth, 120),
-          painter: _BoxPlotWithPointsPainter(
+          painter: _BoxPlotPainter(
             stats: stats,
             values: values,
             config: config,
@@ -214,8 +214,8 @@ class UniversalBoxPlot<T extends DataModel> extends StatelessWidget {
   );
 }
 
-/// Box plot painter с точками данных
-class _BoxPlotWithPointsPainter extends CustomPainter {
+/// Box plot 
+class _BoxPlotPainter extends CustomPainter {
   /// Статистика данных
   final DescriptiveStats stats;
 
@@ -228,7 +228,7 @@ class _BoxPlotWithPointsPainter extends CustomPainter {
   /// Признак для отображения
   final BoxPlotFeature feature;
 
-  _BoxPlotWithPointsPainter({
+  _BoxPlotPainter({
     required this.stats,
     required this.values,
     required this.config,
@@ -245,7 +245,6 @@ class _BoxPlotWithPointsPainter extends CustomPainter {
     final boxColor = Colors.blue;
     final whiskerColor = Colors.grey;
     final medianColor = Colors.red;
-    final pointsColor = Colors.blue.withOpacity(0.3);
     final outliersColor = Colors.orange;
 
     // Основная кисть для линий
@@ -257,7 +256,7 @@ class _BoxPlotWithPointsPainter extends CustomPainter {
 
     // Кисть для ящика
     final boxPaint = Paint()
-      ..color = boxColor.withOpacity(0.3)
+      ..color = boxColor.withValues(alpha: 0.3)
       ..style = PaintingStyle.fill;
 
     final boxBorderPaint = Paint()
@@ -270,11 +269,6 @@ class _BoxPlotWithPointsPainter extends CustomPainter {
       ..color = medianColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3;
-
-    // Кисть для точек
-    final pointsPaint = Paint()
-      ..color = pointsColor
-      ..style = PaintingStyle.fill;
 
     // Кисть для выбросов
     final outliersPaint = Paint()
@@ -292,42 +286,48 @@ class _BoxPlotWithPointsPainter extends CustomPainter {
       return ((value - stats.min) / range) * plotWidth + padding;
     }
 
+
+    // Находим выбросы и границы усов
+    final outliers = _findOutliers(stats, values);
+    final whiskerLower = _getWhiskerLower(values, stats);
+    final whiskerUpper = _getWhiskerUpper(values, stats);
+
+    // Рассчитываем позиции с учетом усов
+    final xWhiskerLower = normalize(whiskerLower);
+    final xWhiskerUpper = normalize(whiskerUpper);
     final xMin = normalize(stats.min);
     final xMax = normalize(stats.max);
     final xQ1 = normalize(stats.q1);
     final xQ3 = normalize(stats.q3);
     final xMedian = normalize(stats.median);
 
-    // Находим выбросы
-    final outliers = _findOutliers(stats, values);
-    final normalPoints = values.where((value) => !outliers.contains(value)).toList();
-
-    // 1. Рисуем точки нормальных данных (jitter plot)
-    _drawDataPoints(canvas, normalPoints, normalize, pointsPaint, centerY);
-
-    // 2. Рисуем точки выбросов
-    _drawDataPoints(canvas, outliers, normalize, outliersPaint, centerY);
-
-    // 3. Рисуем основную линию от Min до Max
+    // 1. Рисуем ЛЕВЫЙ ус (от whiskerLower до Q1)
     canvas.drawLine(
-      Offset(xMin, centerY),
-      Offset(xMax, centerY),
+      Offset(xWhiskerLower, centerY),
+      Offset(xQ1, centerY),
       linePaint,
     );
 
-    // 4. Рисуем вертикальные линии на концах
+    // 2. Рисуем ПРАВЫЙ ус (от Q3 до whiskerUpper)
     canvas.drawLine(
-      Offset(xMin, centerY - 15),
-      Offset(xMin, centerY + 15),
-      linePaint,
-    );
-    canvas.drawLine(
-      Offset(xMax, centerY - 15),
-      Offset(xMax, centerY + 15),
+      Offset(xQ3, centerY),
+      Offset(xWhiskerUpper, centerY),
       linePaint,
     );
 
-    // 5. Рисуем ящик (Q1 до Q3)
+    // 3. Рисуем вертикальные линии на концах усов
+    canvas.drawLine(
+      Offset(xWhiskerLower, centerY - 15),
+      Offset(xWhiskerLower, centerY + 15),
+      linePaint,
+    );
+    canvas.drawLine(
+      Offset(xWhiskerUpper, centerY - 15),
+      Offset(xWhiskerUpper, centerY + 15),
+      linePaint,
+    );
+
+    // 4. Рисуем ящик (Q1 до Q3)
     final boxRect = Rect.fromLTRB(
       xQ1,
       centerY - 25,
@@ -337,34 +337,56 @@ class _BoxPlotWithPointsPainter extends CustomPainter {
     canvas.drawRect(boxRect, boxPaint);
     canvas.drawRect(boxRect, boxBorderPaint);
 
-    // 6. Рисуем медиану
+    // 5. Рисуем медиану
     canvas.drawLine(
       Offset(xMedian, centerY - 25),
       Offset(xMedian, centerY + 25),
       medianPaint,
     );
 
-    // 7. Добавляем подписи ключевых точек
-    _drawLabel(canvas, xMin, centerY + 45, config.formatValue(stats.min, feature.field));
-    _drawLabel(canvas, xMax, centerY + 45, config.formatValue(stats.max, feature.field));
-    _drawLabel(canvas, xMedian, centerY - 45, config.formatValue(stats.median, feature.field));
+    // 6. Рисуем ВЫБРОСЫ как точки
+    _drawOutliers(canvas, outliers, normalize, outliersPaint, centerY);
+
+    // 7. Добавляем подписи
+    _drawLabel(canvas, xWhiskerLower, centerY + 45, 
+               config.formatValue(whiskerLower, feature.field));
+    _drawLabel(canvas, xWhiskerUpper, centerY + 45, 
+               config.formatValue(whiskerUpper, feature.field));
+    _drawLabel(canvas, xMedian, centerY - 45, 
+               config.formatValue(stats.median, feature.field));
   }
 
-  /// Рисует точки данных на canvas
-  void _drawDataPoints(Canvas canvas, List<double> points, double Function(double) normalize, Paint paint, double centerY) {
-    final random = _JitterRandom(); // Для случайного распределения по вертикали
-    
-    for (final value in points) {
-      final x = normalize(value);
-      // Добавляем небольшой случайный разброс по Y для лучшей визуализации
-      final yJitter = centerY + (random.nextDouble() * 40 - 20); // ±20 пикселей
+
+  /// Рисует выбросы на canvas
+  void _drawOutliers(Canvas canvas, List<double> outliers, 
+                    double Function(double) normalize, Paint paint, double centerY) {
+    for (final outlier in outliers) {
+      final x = normalize(outlier);
       
       canvas.drawCircle(
-        Offset(x, yJitter),
-        2.5, // Размер точки
+        Offset(x, centerY),
+        4.0, // Размер точки выброса
         paint,
       );
     }
+  }
+
+  /// Находит нижнюю границу уса (последняя точка не-выброс слева)
+  double _getWhiskerLower(List<double> values, DescriptiveStats stats) {
+    final iqr = stats.q3 - stats.q1;
+    final lowerBound = stats.q1 - 1.5 * iqr;
+    
+    final nonOutliers = values.where((v) => v >= lowerBound).toList();
+    return nonOutliers.isNotEmpty ? nonOutliers.reduce((a, b) => a < b ? a : b) : stats.min;
+  }
+
+  /// Находит верхнюю границу уса (последняя точка не-выброс справа)
+  double _getWhiskerUpper(List<double> values, DescriptiveStats stats) {
+    final iqr = stats.q3 - stats.q1;
+    final upperBound = stats.q3 + 1.5 * iqr;
+    
+    final nonOutliers = values.where((v) => v <= upperBound).toList();
+    return nonOutliers.isNotEmpty ? nonOutliers.reduce((a, b) => a > b ? a : b) : stats.max;
   }
 
   /// Находит выбросы в данных
