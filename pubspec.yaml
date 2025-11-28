@@ -34,3 +34,4 @@ flutter:
     - assets/world_population.csv
     - assets/creditcard.csv
     - assets/heart_attack_prediction_dataset.csv
+    - assets/marketing_campaign.csv
