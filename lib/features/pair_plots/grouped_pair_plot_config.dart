@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../heart_attack/data/heart_attack_data_model.dart';
 import 'pair_plot_config.dart';
+import 'pair_plot_group.dart';
 
 class GroupedHeartAttackPairPlotConfig extends PairPlotConfig<HeartAttackDataModel> {
   final List<PairPlotFeature> _features = [
@@ -72,9 +73,3 @@ class GroupedHeartAttackPairPlotConfig extends PairPlotConfig<HeartAttackDataMod
   }
 }
 
-class PairPlotGroup {
-  final String title;
-  final List<PairPlotFeature> features;
-  
-  const PairPlotGroup({required this.title, required this.features});
-}

@@ -323,9 +323,11 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    TabbedPairPlots<T>(
-                      data: loadedState.data,
-                      config: pairPlotConfig!,
+                    Expanded(
+                      child: TabbedPairPlots<T>(
+                        data: loadedState.data,
+                        config: pairPlotConfig!,
+                      ),
                     ),
                   ],
                 ),

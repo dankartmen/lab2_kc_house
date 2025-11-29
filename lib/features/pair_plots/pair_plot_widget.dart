@@ -31,11 +31,15 @@ class UniversalPairPlots<T extends DataModel> extends StatelessWidget {
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            Container( // Временно упрощаем
-              height: 300,
-              color: Colors.blue[50],
-              child: Center(
-                child: Text('UniversalPairPlots: ${data.length} records'),
+            Expanded( // ✅ Добавлен Expanded
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.blue),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: Text('UniversalPairPlots: ${data.length} records'),
+                ),
               ),
             ),
             //_buildPairPlotMatrix(),

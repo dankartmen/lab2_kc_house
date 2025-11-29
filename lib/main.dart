@@ -4,6 +4,11 @@ import 'package:lab2_kc_house/features/box_plots/configs/house_box_plot_config.d
 import 'package:lab2_kc_house/features/credit_card/bloc/credit_card_fraud_bloc.dart';
 import 'package:lab2_kc_house/features/credit_card/data/credit_card_fraud_data_model.dart';
 import 'package:lab2_kc_house/features/heart_attack/pair_plots/heart_attack_pair_plot_config.dart';
+import 'package:lab2_kc_house/features/marketing/bloc/marketing_campaign_bloc.dart';
+import 'package:lab2_kc_house/features/marketing/configs/grouped_marketing_campaign_pair_plot_config.dart';
+import 'package:lab2_kc_house/features/marketing/configs/marketing_campaign_box_plot_config.dart';
+import 'package:lab2_kc_house/features/marketing/configs/marketing_campaign_histogram_config.dart';
+import 'package:lab2_kc_house/features/marketing/data/marketing_campaign_model.dart';
 
 import 'core/visualization/screens/analysis_screen.dart';
 import 'features/heart_attack/bloc/heart_attack_bloc.dart';
@@ -133,6 +138,25 @@ class HomeScreen extends StatelessWidget {
               ),
               child: const Text('Анализ населения'),
             ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => BlocProvider(
+                      create: (context) => MarketingCampaignBloc(),
+                      child: const MarketingCampaignAnalysisScreen(),
+                    ),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+                textStyle: const TextStyle(fontSize: 18),
+              ),
+              child: const Text('Анализ маркетинговой кампании'),
+            ),
           ],
         ),
       ),
@@ -221,6 +245,29 @@ class HeartAttackAnalysisScreen extends StatelessWidget {
       pairPlotTitle: 'Парные диаграммы',
       autoLoad: true,
       extraAnalysisWidget: const HeartAttackAnalysisWidget(),
+    );
+  }
+}
+
+/// {@template marketing_campaign_analysis_screen}
+/// Специализированный экран для анализа маркетинговой компании.
+/// {@endtemplate}
+class MarketingCampaignAnalysisScreen extends StatelessWidget {
+  /// {@macro marketing_campaign_analysis_screen}
+  const MarketingCampaignAnalysisScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return GenericAnalysisScreen<MarketingCampaignDataModel>(
+      bloc: context.read<MarketingCampaignBloc>(),
+      title: 'Анализ риска маркетинговой кампании',
+      histogramConfig: MarketingCampaignHistogramConfig(),
+      histogramTitle: 'Гистограммы для марркетинговой кампании',
+      boxPlotConfig: MarketingCampaignBoxPlotConfig(),
+      boxPlotTitle: 'Диаграммы размаха для маркетинговой кампании',
+      //pairPlotTitle: 'Парные диаграммы',
+      //pairPlotConfig: GroupedMarketingCampaignPairPlotConfig(),
+      autoLoad: true,
     );
   }
 }

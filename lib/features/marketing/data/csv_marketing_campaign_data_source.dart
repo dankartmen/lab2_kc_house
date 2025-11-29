@@ -15,10 +15,15 @@ class CsvMarketingCampaignDataSource implements DataSource<MarketingCampaignData
   Future<List<MarketingCampaignDataModel>> loadData() async {
     try {
       // Загрузка CSV из assets
-      final csvString = await rootBundle.loadString('assets/marketing_campaign_dataset.csv');
+      final csvString = await rootBundle.loadString('assets/marketing_campaign.csv');
       
+      final processedCsvString = _preprocessCsv(csvString);
+
       // Парсинг CSV данных
-      final csvData = const CsvToListConverter().convert(csvString, eol: '\n');
+      final csvData = const CsvToListConverter(
+        fieldDelimiter: '\t',
+        shouldParseNumbers: false, 
+      ).convert(processedCsvString, eol: '\n');
 
       // Пропускаем заголовок и преобразуем строки в MarketingCampaignDataModel
       final campaignData = csvData.skip(1).map((row) => MarketingCampaignDataModel.fromCsv(row)).toList();
@@ -27,6 +32,12 @@ class CsvMarketingCampaignDataSource implements DataSource<MarketingCampaignData
     } catch (e) {
       throw Exception('Ошибка загрузки данных маркетинговой кампании: $e');
     }
+  }
+
+  /// Предварительная обработка CSV строки
+  String _preprocessCsv(String csvString) {
+    //Замена двойных пробелов на табы
+    return csvString.replaceAll('  ', '\t');
   }
 
   @override

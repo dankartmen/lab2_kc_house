@@ -1,7 +1,9 @@
 // tabbed_pair_plots.dart
 import 'package:flutter/material.dart';
 import '../../../core/data/data_model.dart';
+import '../marketing/configs/grouped_marketing_campaign_pair_plot_config.dart';
 import 'pair_plot_config.dart';
+import 'pair_plot_group.dart';
 import 'pair_plot_widget.dart';
 import 'grouped_pair_plot_config.dart';
 import 'grouped_config_wrapper.dart';
@@ -29,31 +31,36 @@ class _TabbedPairPlotsState<T extends DataModel> extends State<TabbedPairPlots<T
     
     return Column(
       children: [
-        // Простой Row с кнопками вместо сложных табов
         Container(
           padding: const EdgeInsets.all(8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: groups.asMap().entries.map((entry) {
-              final index = entry.key;
-              final group = entry.value;
-              final isSelected = _selectedTabIndex == index;
-              
-              return ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    _selectedTabIndex = index;
-                  });
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isSelected 
-                      ? Theme.of(context).primaryColor 
-                      : Colors.grey[300],
-                  foregroundColor: isSelected ? Colors.white : Colors.black,
-                ),
-                child: Text(group.title),
-              );
-            }).toList(),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: groups.asMap().entries.map((entry) {
+                final index = entry.key;
+                final group = entry.value;
+                final isSelected = _selectedTabIndex == index;
+                
+                return Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _selectedTabIndex = index;
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isSelected 
+                          ? Theme.of(context).primaryColor 
+                          : Colors.grey[300],
+                      foregroundColor: isSelected ? Colors.white : Colors.black,
+                    ),
+                    child: Text(group.title),
+                  ),
+                );
+              }).toList(),
+            ),
           ),
         ),
         
@@ -61,24 +68,14 @@ class _TabbedPairPlotsState<T extends DataModel> extends State<TabbedPairPlots<T
         
         // Контент выбранной группы
         Expanded(
-          child: Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.blue),
-              borderRadius: BorderRadius.circular(8),
+          child: UniversalPairPlots<T>(
+            data: widget.data,
+            config: GroupedPairPlotConfigWrapper<T>(
+              originalConfig: widget.config,
+              groupFeatures: groups[_selectedTabIndex].features,
             ),
-            margin: const EdgeInsets.all(8),
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Группа: ${groups[_selectedTabIndex].title}',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
-                Text('Признаков: ${groups[_selectedTabIndex].features.length}'),
-              ],
-            ),
+            title: groups[_selectedTabIndex].title,
+            colorField: 'response', 
           ),
         ),
       ],
@@ -89,7 +86,9 @@ class _TabbedPairPlotsState<T extends DataModel> extends State<TabbedPairPlots<T
     if (widget.config is GroupedHeartAttackPairPlotConfig) {
       return (widget.config as GroupedHeartAttackPairPlotConfig).groups;
     }
-    
+    if (widget.config is GroupedMarketingCampaignPairPlotConfig) {
+      return (widget.config as GroupedMarketingCampaignPairPlotConfig).groups;
+    }
     return [
       PairPlotGroup(
         title: 'Все признаки',

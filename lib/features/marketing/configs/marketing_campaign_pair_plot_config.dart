@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 
 import '../../pair_plots/pair_plot_config.dart';
 import '../data/marketing_campaign_model.dart';
+import 'grouped_marketing_campaign_pair_plot_config.dart';
 
 class MarketingCampaignPairPlotConfig extends GroupedMarketingCampaignPairPlotConfig {
   @override
   List<PairPlotFeature> get features => [
     PairPlotFeature('income', 'Доход', divisor: 1000.0),
-    PairPlotFeature('mntWines', 'Вино'),
-    PairPlotFeature('mntMeatProducts', 'Мясо'),
+    PairPlotFeature('mntWines', 'Вино', divisor: 100.0),
+    PairPlotFeature('mntMeatProducts', 'Мясо', divisor: 100.0),
     PairPlotFeature('numWebPurchases', 'Онлайн покупки'),
     PairPlotFeature('numStorePurchases', 'Магазинные покупки'),
     PairPlotFeature('recency', 'Дней с покупки'),
