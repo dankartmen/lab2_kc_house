@@ -3,9 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lab2_kc_house/features/box_plots/configs/house_box_plot_config.dart';
 import 'package:lab2_kc_house/features/credit_card/bloc/credit_card_fraud_bloc.dart';
 import 'package:lab2_kc_house/features/credit_card/data/credit_card_fraud_data_model.dart';
-import 'package:lab2_kc_house/features/heart_attack/pair_plots/heart_attack_pair_plot_config.dart';
 import 'package:lab2_kc_house/features/marketing/bloc/marketing_campaign_bloc.dart';
-import 'package:lab2_kc_house/features/marketing/configs/grouped_marketing_campaign_pair_plot_config.dart';
 import 'package:lab2_kc_house/features/marketing/configs/marketing_campaign_box_plot_config.dart';
 import 'package:lab2_kc_house/features/marketing/configs/marketing_campaign_histogram_config.dart';
 import 'package:lab2_kc_house/features/marketing/data/marketing_campaign_model.dart';
@@ -20,6 +18,7 @@ import 'features/histograms/configs/house_histogram_config.dart';
 import 'features/histograms/configs/population_histogram_config.dart';
 import 'features/house/bloc/house_bloc.dart';
 import 'features/house/data/house_data_model.dart';
+import 'features/marketing/customer_clustering_widget.dart';
 import 'features/population/bloc/population_bloc.dart';
 import 'features/population/data/population_model.dart';
 
@@ -267,6 +266,9 @@ class MarketingCampaignAnalysisScreen extends StatelessWidget {
       boxPlotTitle: 'Диаграммы размаха для маркетинговой кампании',
       //pairPlotTitle: 'Парные диаграммы',
       //pairPlotConfig: GroupedMarketingCampaignPairPlotConfig(),
+      extraAnalysisWidget: const CustomerClusteringWidget(
+        apiUrl: "http://195.225.111.85:8000/api/customer-clustering",
+      ),
       autoLoad: true,
     );
   }
