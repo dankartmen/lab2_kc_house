@@ -240,7 +240,7 @@ class HeartAttackAnalysisScreen extends StatelessWidget {
       histogramConfig: HeartAttackHistogramConfig(),
       histogramTitle: 'Гистограммы распределения факторов риска',
       boxPlotConfig: HeartAttackBoxPlotConfig(),
-      boxPlotTitle: 'Диаграммы размаха по группам',
+      boxPlotTitle: 'Диаграммы размаха по HeartAttackRisk',
       pairPlotTitle: 'Парные диаграммы',
       autoLoad: true,
       extraAnalysisWidget: const HeartAttackAnalysisWidget(),

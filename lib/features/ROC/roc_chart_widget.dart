@@ -149,7 +149,7 @@ class RocChartWidget extends StatelessWidget {
             dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(
               show: true,
-              color: Colors.blue.withOpacity(0.1),
+              color: Colors.blue.withValues(alpha: 0.1),
             ),
           ),
           // Диагональ случайного классификатора
@@ -167,7 +167,7 @@ class RocChartWidget extends StatelessWidget {
             // Линия для TPR = 0.5
             HorizontalLine(
               y: 0.5,
-              color: Colors.grey.withOpacity(0.5),
+              color: Colors.grey.withValues(alpha: 0.5),
               strokeWidth: 1,
               dashArray: [5, 5],
             ),
@@ -182,7 +182,7 @@ class RocChartWidget extends StatelessWidget {
             // Линия для FPR = 0.5
             VerticalLine(
               x: 0.5,
-              color: Colors.grey.withOpacity(0.5),
+              color: Colors.grey.withValues(alpha: 0.5),
               strokeWidth: 1,
               dashArray: [5, 5],
             ),

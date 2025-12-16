@@ -12,7 +12,6 @@ import '../../../features/histograms/histogram_widget.dart';
 import '../../../features/house/data/house_data_model.dart';
 import '../../../features/pair_plots/grouped_pair_plot_config.dart';
 import '../../../features/pair_plots/pair_plot_config.dart';
-import '../../../features/pair_plots/pair_plot_widget.dart';
 import '../../../features/pair_plots/tabbed_pair_plots.dart';
 import '../../data/data_bloc.dart';
 import '../../data/data_event.dart';
@@ -21,8 +20,6 @@ import '../../data/data_state.dart';
 import '../charts/correlation_heatmap.dart';
 import '../../../features/box_plots/box_plot_config.dart';
 import '../../../features/box_plots/box_plot_widget.dart';
-import '../charts/correlation_line_chart.dart';
-import '../charts/year_price_line_chart.dart';
 import 'package:lab2_kc_house/features/credit_card/data/fraud_analysis_model.dart';
 
 
@@ -298,8 +295,8 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
 
         // Pair plots, если конфиг предоставлен
         if (pairPlotConfig != null && pairPlotTitle != null) {
-          print('=== PairPlotConfig type: ${pairPlotConfig.runtimeType} ===');
-          print('=== Is GroupedHeartAttackPairPlotConfig: ${pairPlotConfig is GroupedHeartAttackPairPlotConfig} ===');
+          debugPrint('=== PairPlotConfig type: ${pairPlotConfig.runtimeType} ===');
+          debugPrint('=== Is GroupedHeartAttackPairPlotConfig: ${pairPlotConfig is GroupedHeartAttackPairPlotConfig} ===');
           
           children.add(
             Card(

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../analysis/correlation_calculator.dart';
@@ -118,7 +119,7 @@ abstract class GenericBloc<T extends DataModel> extends Bloc<DataEvent, DataStat
         ));
       } catch (e) {
         // Не прерываем основное состояние, просто логируем ошибку
-        print('Error loading analysis: $e');
+        debugPrint('Error loading analysis: $e');
         // Можно добавить уведомление об ошибке в метаданные
         emit(currentState.copyWith(
           metadata: {

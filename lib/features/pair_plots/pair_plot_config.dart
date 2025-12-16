@@ -1,7 +1,6 @@
 import 'dart:ui';
 
 import '../../core/data/data_model.dart';
-import '../heart_attack/data/heart_attack_data_model.dart';
 
 /// {@template pair_plot_config}
 /// Конфигурация для матрицы парных диаграмм (pair plots).

@@ -5,9 +5,15 @@ import '../data/heart_attack_data_model.dart';
 class HeartAttackBoxPlotConfig extends BoxPlotConfig<HeartAttackDataModel> {
   @override
   List<BoxPlotFeature> get features => [
-        BoxPlotFeature('Возраст по полу', 'age', groupBy: 'sex', divisor: 1.0),
-        BoxPlotFeature('BMI по континенту', 'bmi', groupBy: 'continent', divisor: 1.0),
-        BoxPlotFeature('Холестерин', 'cholesterol', divisor: 1.0),
+        BoxPlotFeature('Возраст', 'age', groupBy: 'heartAttackRisk', divisor: 1.0),
+        BoxPlotFeature('Индекс массы тела', 'bmi', groupBy: 'heartAttackRisk', divisor: 1.0),
+        BoxPlotFeature('Холестерин', 'cholesterol', groupBy: 'heartAttackRisk', divisor: 1.0),
+        BoxPlotFeature('Ежедневная физическая активность в течении недели', 'physicalActivityDaysPerWeek', groupBy: 'heartAttackRisk', divisor: 1.0),
+        BoxPlotFeature('Сердечный ритм', 'heartRate', groupBy: 'heartAttackRisk', divisor: 1.0),
+        BoxPlotFeature('Уровень стресса', 'stressLevel', groupBy: 'heartAttackRisk', divisor: 1.0),
+        BoxPlotFeature('Триглицериды', 'triglycerides', groupBy: 'heartAttackRisk', divisor: 1.0),
+        BoxPlotFeature('Часы сна в день', 'sleepHoursPerDay', groupBy: 'heartAttackRisk', divisor: 1.0),
+        BoxPlotFeature('Уровень ежедневной сидячей нагрузки', 'sedentaryHoursPerDay', groupBy: 'heartAttackRisk', divisor: 1.0),
       ];
 
   @override
@@ -17,6 +23,8 @@ class HeartAttackBoxPlotConfig extends BoxPlotConfig<HeartAttackDataModel> {
 
   @override
   String formatValue(double value, String field) {
-    return field == 'bmi' ? value.toStringAsFixed(1) : value.toStringAsFixed(0);
+    return field == 'bmi' || field == 'physicalActivity' 
+        ? value.toStringAsFixed(1) 
+        : value.toStringAsFixed(0);
   }
 }

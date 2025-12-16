@@ -58,13 +58,23 @@ class UniversalBoxPlot<T extends DataModel> extends StatelessWidget {
 
   /// Строит одиночный box plot
   Widget _buildSingleBoxPlot(BoxPlotFeature feature) {
-    final values = _extractValues(feature.field, feature.divisor);
-    if (values.isEmpty) {
+    if (data.isEmpty) {
       return _buildEmptyBoxPlot('Нет данных для ${feature.title}');
     }
 
-    final stats = StatisticsCalculator.calculateDescriptiveStats(values);
+    // Если есть группировка, строим несколько box plot
+    if (feature.groupBy != null) {
+      return _buildGroupedBoxPlot(feature);
+    }
 
+    // Обычный box plot без группировки
+    return _buildSingleBoxPlotContent(feature, data);
+  }
+
+  /// Строит box plot с группировкой
+  Widget _buildGroupedBoxPlot(BoxPlotFeature feature) {
+    final groups = _groupDataByFeature(feature.groupBy!);
+    
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey[300]!),
@@ -75,32 +85,81 @@ class UniversalBoxPlot<T extends DataModel> extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Заголовок и статистика
-          _buildHeader(feature.title, stats, feature),
-          const SizedBox(height: 16),
-          // Сам график
-          SizedBox(
-            height: 140, // Увеличили высоту для точек
-            child: _buildBoxPlotWithPoints(stats, values, feature),
+          // Заголовок
+          Text(
+            feature.title,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 8),
-          // Подпись с выбросами
-          _buildOutlierInfo(stats, values),
+          const SizedBox(height: 16),
+          
+          // Box plot для каждой группы
+          ...groups.entries.map((entry) {
+            final groupName = entry.key;
+            final groupData = entry.value;
+            
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${feature.groupBy} = $groupName',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildSingleBoxPlotContent(feature, groupData),
+                ],
+              ),
+            );
+          }),
         ],
       ),
     );
   }
 
-  /// Строит заголовок и статистику для box plot
-  Widget _buildHeader(String title, DescriptiveStats stats, BoxPlotFeature feature) {
+  /// Строит содержимое одного box plot
+  Widget _buildSingleBoxPlotContent(BoxPlotFeature feature, List<T> plotData) {
+    final values = _extractValues(plotData, feature.field, feature.divisor);
+    if (values.isEmpty) {
+      return _buildEmptyBoxPlot('Нет данных');
+    }
+
+    final stats = StatisticsCalculator.calculateDescriptiveStats(values);
+    final outliers = _findOutliers(stats, values);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+        // Статистика (только для негруппированных или как подпись)
+        if (feature.groupBy == null) ...[
+          _buildStatsSummary(stats, feature, outliers),
+          const SizedBox(height: 16),
+        ],
+        
+        // Сам график
+        SizedBox(
+          height: 120,
+          child: _buildBoxPlotWithPoints(stats, values, feature, outliers),
         ),
-        const SizedBox(height: 8),
+        
+        // Подпись с выбросами (только для негруппированных)
+        if (feature.groupBy == null) ...[
+          const SizedBox(height: 8),
+          _buildOutlierInfo(outliers, stats.count),
+        ],
+      ],
+    );
+  }
+
+  /// Строит статистическую сводку
+  Widget _buildStatsSummary(DescriptiveStats stats, BoxPlotFeature feature, List<double> outliers) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         Wrap(
           spacing: 16,
           runSpacing: 8,
@@ -109,8 +168,20 @@ class UniversalBoxPlot<T extends DataModel> extends StatelessWidget {
             _buildStatItem('Медиана:', config.formatValue(stats.median, feature.field)),
             _buildStatItem('Q1:', config.formatValue(stats.q1, feature.field)),
             _buildStatItem('Q3:', config.formatValue(stats.q3, feature.field)),
+            _buildStatItem('IQR:', config.formatValue(stats.q3 - stats.q1, feature.field)),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 16,
+          runSpacing: 8,
+          children: [
             _buildStatItem('Min:', config.formatValue(stats.min, feature.field)),
             _buildStatItem('Max:', config.formatValue(stats.max, feature.field)),
+            _buildStatItem(
+              'Выбросы:', 
+              '${outliers.length} (${(outliers.length / stats.count * 100).toStringAsFixed(1)}%)'
+            ),
           ],
         ),
       ],
@@ -142,14 +213,20 @@ class UniversalBoxPlot<T extends DataModel> extends StatelessWidget {
   }
 
   /// Строит box plot с точками данных
-  Widget _buildBoxPlotWithPoints(DescriptiveStats stats, List<double> values, BoxPlotFeature feature) {
+  Widget _buildBoxPlotWithPoints(
+    DescriptiveStats stats, 
+    List<double> values, 
+    BoxPlotFeature feature,
+    List<double> outliers,
+  ) {
     return LayoutBuilder(
       builder: (context, constraints) {
         return CustomPaint(
-          size: Size(constraints.maxWidth, 120),
+          size: Size(constraints.maxWidth, 100),
           painter: _BoxPlotPainter(
             stats: stats,
             values: values,
+            outliers: outliers,
             config: config,
             feature: feature,
           ),
@@ -159,12 +236,10 @@ class UniversalBoxPlot<T extends DataModel> extends StatelessWidget {
   }
 
   /// Строит информацию о выбросах
-  Widget _buildOutlierInfo(DescriptiveStats stats, List<double> values) {
-    final outliers = _findOutliers(stats, values);
-    
+  Widget _buildOutlierInfo(List<double> outliers, int totalCount) {
     if (outliers.isNotEmpty) {
       return Text(
-        'Выбросы: ${outliers.length} записей (${(outliers.length / stats.count * 100).toStringAsFixed(1)}%)',
+        'Выбросы: ${outliers.length} записей (${(outliers.length / totalCount * 100).toStringAsFixed(1)}%)',
         style: TextStyle(
           fontSize: 11,
           color: Colors.orange[700],
@@ -176,6 +251,34 @@ class UniversalBoxPlot<T extends DataModel> extends StatelessWidget {
     return const SizedBox();
   }
 
+  /// Группирует данные по указанному полю
+  Map<String, List<T>> _groupDataByFeature(String field) {
+    final groups = <String, List<T>>{};
+    
+    for (final item in data) {
+      final value = config.extractValue(item, field);
+      if (value != null) {
+        final groupKey = value.toString();
+        groups.putIfAbsent(groupKey, () => []);
+        groups[groupKey]!.add(item);
+      }
+    }
+    
+    return groups;
+  }
+
+  /// Извлекает значения для указанного поля
+  List<double> _extractValues(List<T> dataList, String field, double divisor) {
+    final values = <double>[];
+    for (final item in dataList) {
+      final value = config.extractValue(item, field);
+      if (value != null && value.isFinite) {
+        values.add(value / divisor);
+      }
+    }
+    return values;
+  }
+
   /// Находит выбросы в данных
   List<double> _findOutliers(DescriptiveStats stats, List<double> values) {
     final iqr = stats.q3 - stats.q1;
@@ -183,18 +286,6 @@ class UniversalBoxPlot<T extends DataModel> extends StatelessWidget {
     final upperBound = stats.q3 + 1.5 * iqr;
     
     return values.where((value) => value < lowerBound || value > upperBound).toList();
-  }
-
-   /// Извлекает значения для указанного поля
-  List<double> _extractValues(String field, double divisor) {
-    final values = <double>[];
-    for (final item in data) {
-      final value = config.extractValue(item, field);
-      if (value != null && value.isFinite) {
-        values.add(value / divisor);
-      }
-    }
-    return values;
   }
 
   /// Строит пустой box plot
@@ -214,13 +305,16 @@ class UniversalBoxPlot<T extends DataModel> extends StatelessWidget {
   );
 }
 
-/// Box plot 
+/// Box plot painter
 class _BoxPlotPainter extends CustomPainter {
   /// Статистика данных
   final DescriptiveStats stats;
 
   /// Значения данных
   final List<double> values;
+
+  /// Выбросы
+  final List<double> outliers;
 
   /// Конфигурация box plot
   final BoxPlotConfig config;
@@ -231,6 +325,7 @@ class _BoxPlotPainter extends CustomPainter {
   _BoxPlotPainter({
     required this.stats,
     required this.values,
+    required this.outliers,
     required this.config,
     required this.feature,
   });
@@ -275,10 +370,6 @@ class _BoxPlotPainter extends CustomPainter {
       ..color = outliersColor
       ..style = PaintingStyle.fill;
 
-    // Рассчитываем позиции
-    final minX = padding;
-    final maxX = size.width - padding;
-
     // Нормализуем значения в диапазон графика
     double normalize(double value) {
       final range = stats.max - stats.min;
@@ -286,20 +377,23 @@ class _BoxPlotPainter extends CustomPainter {
       return ((value - stats.min) / range) * plotWidth + padding;
     }
 
+    // Рассчитываем границы для определения выбросов
+    final iqr = stats.q3 - stats.q1;
+    final lowerBound = stats.q1 - 1.5 * iqr;
+    final upperBound = stats.q3 + 1.5 * iqr;
 
-    // Находим выбросы и границы усов
-    final outliers = _findOutliers(stats, values);
-    final whiskerLower = _getWhiskerLower(values, stats);
-    final whiskerUpper = _getWhiskerUpper(values, stats);
+    // Находим границы усов (самые крайние точки, не являющиеся выбросами)
+    final whiskerLower = _getWhiskerLower(values, lowerBound);
+    final whiskerUpper = _getWhiskerUpper(values, upperBound);
 
-    // Рассчитываем позиции с учетом усов
+    // Рассчитываем позиции для рисования
     final xWhiskerLower = normalize(whiskerLower);
     final xWhiskerUpper = normalize(whiskerUpper);
-    final xMin = normalize(stats.min);
-    final xMax = normalize(stats.max);
     final xQ1 = normalize(stats.q1);
     final xQ3 = normalize(stats.q3);
     final xMedian = normalize(stats.median);
+    final xLowerBound = normalize(lowerBound);
+    final xUpperBound = normalize(upperBound);
 
     // 1. Рисуем ЛЕВЫЙ ус (от whiskerLower до Q1)
     canvas.drawLine(
@@ -317,85 +411,138 @@ class _BoxPlotPainter extends CustomPainter {
 
     // 3. Рисуем вертикальные линии на концах усов
     canvas.drawLine(
-      Offset(xWhiskerLower, centerY - 15),
-      Offset(xWhiskerLower, centerY + 15),
+      Offset(xWhiskerLower, centerY - 10),
+      Offset(xWhiskerLower, centerY + 10),
       linePaint,
     );
     canvas.drawLine(
-      Offset(xWhiskerUpper, centerY - 15),
-      Offset(xWhiskerUpper, centerY + 15),
+      Offset(xWhiskerUpper, centerY - 10),
+      Offset(xWhiskerUpper, centerY + 10),
       linePaint,
     );
 
     // 4. Рисуем ящик (Q1 до Q3)
     final boxRect = Rect.fromLTRB(
       xQ1,
-      centerY - 25,
+      centerY - 20,
       xQ3,
-      centerY + 25,
+      centerY + 20,
     );
     canvas.drawRect(boxRect, boxPaint);
     canvas.drawRect(boxRect, boxBorderPaint);
 
     // 5. Рисуем медиану
     canvas.drawLine(
-      Offset(xMedian, centerY - 25),
-      Offset(xMedian, centerY + 25),
+      Offset(xMedian, centerY - 20),
+      Offset(xMedian, centerY + 20),
       medianPaint,
     );
 
-    // 6. Рисуем ВЫБРОСЫ как точки
+    // 6. Рисуем только ВЫБРОСЫ
     _drawOutliers(canvas, outliers, normalize, outliersPaint, centerY);
 
     // 7. Добавляем подписи
-    _drawLabel(canvas, xWhiskerLower, centerY + 45, 
+    _drawLabel(canvas, xWhiskerLower, centerY + 35, 
                config.formatValue(whiskerLower, feature.field));
-    _drawLabel(canvas, xWhiskerUpper, centerY + 45, 
+    _drawLabel(canvas, xWhiskerUpper, centerY + 35, 
                config.formatValue(whiskerUpper, feature.field));
-    _drawLabel(canvas, xMedian, centerY - 45, 
+    _drawLabel(canvas, xMedian, centerY - 35, 
                config.formatValue(stats.median, feature.field));
+
+    // 8. Рисуем границы выбросов пунктирной линией (опционально)
+    _drawOutlierBounds(canvas, xLowerBound, xUpperBound, centerY, size.height);
   }
 
-
-  /// Рисует выбросы на canvas
-  void _drawOutliers(Canvas canvas, List<double> outliers, 
-                    double Function(double) normalize, Paint paint, double centerY) {
+  /// Рисует только выбросы (обычные точки не рисуются)
+  void _drawOutliers(
+    Canvas canvas, 
+    List<double> outliers, 
+    double Function(double) normalize, 
+    Paint outliersPaint,
+    double centerY,
+  ) {
+    final jitter = _JitterRandom();
+    
     for (final outlier in outliers) {
       final x = normalize(outlier);
       
+      // Добавляем небольшой вертикальный jitter для лучшей видимости перекрывающихся точек
+      final jitterY = centerY + (jitter.nextDouble() * 8 - 4);
+      
       canvas.drawCircle(
-        Offset(x, centerY),
-        4.0, // Размер точки выброса
-        paint,
+        Offset(x, jitterY),
+        4.0,
+        outliersPaint,
       );
     }
   }
 
-  /// Находит нижнюю границу уса (последняя точка не-выброс слева)
-  double _getWhiskerLower(List<double> values, DescriptiveStats stats) {
-    final iqr = stats.q3 - stats.q1;
-    final lowerBound = stats.q1 - 1.5 * iqr;
+  /// Рисует границы выбросов пунктирной линией
+  void _drawOutlierBounds(
+    Canvas canvas, 
+    double xLowerBound, 
+    double xUpperBound, 
+    double centerY,
+    double height,
+  ) {
+    final dashPaint = Paint()
+      ..color = Colors.grey.withValues(alpha: 0.5)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.8
+      ..strokeCap = StrokeCap.round;
     
+    // Пунктирный паттерн
+    final dashPattern = [4.0, 4.0];
+    
+    // Рисуем левую границу выбросов
+    _drawDashedLine(canvas, Offset(xLowerBound, 10), Offset(xLowerBound, height - 10), dashPaint, dashPattern);
+    
+    // Рисуем правую границу выбросов
+    _drawDashedLine(canvas, Offset(xUpperBound, 10), Offset(xUpperBound, height - 10), dashPaint, dashPattern);
+  }
+
+  /// Рисует пунктирную линию
+  void _drawDashedLine(
+    Canvas canvas, 
+    Offset start, 
+    Offset end, 
+    Paint paint, 
+    List<double> dashPattern,
+  ) {
+    final distance = (end - start).distance;
+    final dir = (end - start) / distance;
+    
+    double drawn = 0.0;
+    bool draw = true;
+    int patternIndex = 0;
+    
+    while (drawn < distance) {
+      final patternLength = dashPattern[patternIndex % dashPattern.length];
+      final endPoint = drawn + patternLength;
+      
+      if (draw) {
+        final segmentEnd = start + dir * (endPoint < distance ? endPoint : distance);
+        canvas.drawLine(start + dir * drawn, segmentEnd, paint);
+      }
+      
+      drawn += patternLength;
+      draw = !draw;
+      patternIndex++;
+    }
+  }
+
+  /// Находит нижнюю границу уса (минимальное значение, не являющееся выбросом)
+  double _getWhiskerLower(List<double> values, double lowerBound) {
     final nonOutliers = values.where((v) => v >= lowerBound).toList();
-    return nonOutliers.isNotEmpty ? nonOutliers.reduce((a, b) => a < b ? a : b) : stats.min;
+    return nonOutliers.isNotEmpty ? nonOutliers.reduce((a, b) => a < b ? a : b) : 
+           values.reduce((a, b) => a < b ? a : b); // Если все значения - выбросы, берем абсолютный минимум
   }
 
-  /// Находит верхнюю границу уса (последняя точка не-выброс справа)
-  double _getWhiskerUpper(List<double> values, DescriptiveStats stats) {
-    final iqr = stats.q3 - stats.q1;
-    final upperBound = stats.q3 + 1.5 * iqr;
-    
+  /// Находит верхнюю границу уса (максимальное значение, не являющееся выбросом)
+  double _getWhiskerUpper(List<double> values, double upperBound) {
     final nonOutliers = values.where((v) => v <= upperBound).toList();
-    return nonOutliers.isNotEmpty ? nonOutliers.reduce((a, b) => a > b ? a : b) : stats.max;
-  }
-
-  /// Находит выбросы в данных
-  List<double> _findOutliers(DescriptiveStats stats, List<double> values) {
-    final iqr = stats.q3 - stats.q1;
-    final lowerBound = stats.q1 - 1.5 * iqr;
-    final upperBound = stats.q3 + 1.5 * iqr;
-    
-    return values.where((value) => value < lowerBound || value > upperBound).toList();
+    return nonOutliers.isNotEmpty ? nonOutliers.reduce((a, b) => a > b ? a : b) : 
+           values.reduce((a, b) => a > b ? a : b); // Если все значения - выбросы, берем абсолютный максимум
   }
 
   /// Рисует подпись на canvas

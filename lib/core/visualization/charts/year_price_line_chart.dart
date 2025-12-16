@@ -133,8 +133,8 @@ class YearPriceLineChart extends StatelessWidget {
                         show: true,
                         gradient: LinearGradient(
                           colors: [
-                            Colors.green.withOpacity(0.3),
-                            Colors.green.withOpacity(0.1),
+                            Colors.green.withValues(alpha: 0.3),
+                            Colors.green.withValues(alpha: 0.1),
                           ],
                         ),
                       ),

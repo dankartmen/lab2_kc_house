@@ -106,7 +106,7 @@ class CorrelationHeatmap extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           )
-        ).toList(),
+        ),
       ],
     );
   }
@@ -128,7 +128,7 @@ class CorrelationHeatmap extends StatelessWidget {
             final correlation = correlationMatrix[rowLabel]![colLabel] ?? 0.0;
             
             return _buildHeatmapCell(correlation, rowIndex, colIndex);
-          }).toList(),
+          }),
         ],
       );
     }).toList();

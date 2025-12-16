@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:flutter/material.dart';
+
 import '../../../core/data/data_model.dart';
 
 /// {@template house_data_model}
@@ -193,7 +195,7 @@ class HouseDataModel extends DataModel {
       case 'sqft_living15': return sqftLiving15.toDouble();
       case 'sqft_lot15': return sqftLot15.toDouble();
       default: 
-        print('Unknown field: $field');  // Лог для отладки
+        debugPrint('Unknown field: $field');  // Лог для отладки
         return 0.0;  // Фикс: Fallback вместо null
     }
   }
