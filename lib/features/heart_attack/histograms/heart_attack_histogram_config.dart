@@ -5,12 +5,13 @@ import '../data/heart_attack_data_model.dart';
 class HeartAttackHistogramConfig extends HistogramConfig<HeartAttackDataModel> {
   @override
   List<HistogramFeature> get features => [
-        HistogramFeature('Возраст', 'age', 1.0, 'лет'),
-        HistogramFeature('Холестерин', 'cholesterol', 1.0, 'мг/дл'),
-        HistogramFeature('Индекс массы тела (BMI)', 'bmi', 1.0, ''),
-        HistogramFeature('Уровень стресса', 'stressLevel', 1.0, 'из 10'),
-        HistogramFeature('Часы сна в день', 'sleepHoursPerDay', 1.0, 'ч'),
-        HistogramFeature('Частота сердцебиения', 'heartRate', 1, 'уд.мин')
+        HistogramFeature('Возраст', 'age', 1.0, 'лет', binCount: 30),
+        HistogramFeature('Холестерин', 'cholesterol', 1.0, 'мг/дл', binCount: 12),
+        HistogramFeature('Индекс массы тела', 'bmi', 1.0, 'кг/м²', binCount: 10),
+        HistogramFeature('Уровень стресса', 'stressLevel', 1.0, 'из 10', binCount: 10),
+        HistogramFeature('Часы сна', 'sleepHoursPerDay', 1.0, 'ч', binCount: 8),
+        HistogramFeature('Частота сердцебиения', 'heartRate', 1, 'уд/мин', binCount: 10),
+        HistogramFeature('Физическая активность', 'physicalActivity', 1.0, 'ч/нед', binCount: 10),
       ];
 
   @override
@@ -18,13 +19,10 @@ class HeartAttackHistogramConfig extends HistogramConfig<HeartAttackDataModel> {
     return data.getNumericValue(field);
   }
 
-  @override
-  String formatBinLabel(int binIndex, int totalBins, List<double> values) {
-    if (values.isEmpty) return '';
-    final min = values.reduce((a, b) => a < b ? a : b);
-    final max = values.reduce((a, b) => a > b ? a : b);
-    final binWidth = (max - min) / totalBins;
-    final label = (min + binIndex * binWidth).toStringAsFixed(0);
-    return '$label–${(min + (binIndex + 1) * binWidth).toStringAsFixed(0)}';
+  String formatValue(double value, String field) {
+    // Форматирование для отображения значений
+    return field == 'bmi' || field == 'physicalActivity'
+        ? value.toStringAsFixed(1)
+        : value.toStringAsFixed(0);
   }
 }

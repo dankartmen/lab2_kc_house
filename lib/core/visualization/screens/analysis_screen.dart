@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 import 'dart:ui' as ui;
 import 'package:fl_chart/fl_chart.dart';
@@ -5,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:lab2_kc_house/features/credit_card/data/credit_card_fraud_data_model.dart';
+import 'package:lab2_kc_house/features/heart_attack/data/heart_attack_data_model.dart';
+import 'package:sample_statistics/sample_statistics.dart';
 import '../../../features/ROC/roc_chart_widget.dart';
 import '../../../features/credit_card/bloc/credit_card_fraud_bloc.dart';
 import '../../../features/histograms/histogram_config.dart';
@@ -344,6 +347,44 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
           children.add(_buildRegressionAnalysis(loadedState.metadata['regression_analysis']));
         }
 
+        if (T == HeartAttackDataModel){
+          // final numericFields = [
+          //   'age',
+          //   'cholesterol',
+          //   'heartRate',
+          //   'exerciseHoursPerWeek',
+          //   'stressLevel',
+          //   'sedentaryHoursPerDay',
+          //   'income',
+          //   'bmi',
+          //   'triglycerides',
+          //   'physicalActivityDaysPerWeek',
+          //   'sleepHoursPerDay',
+          //   'heartAttackRisk',
+          // ];
+
+          // for (final field in numericFields){
+          //   final values = state.data.map((model) => model.getNumericValue(field)!).toList();
+          //   final stats = Stats(values);
+          //   debugPrint('Field: $field');
+          //   debugPrint('Min: ${stats.min}, Max: ${stats.max}, Mean: ${stats.mean}, Median: ${stats.median}, StdDev: ${stats.stdDev}');
+          //   // PDF typed to the package typedef to satisfy the exportHistogram signature
+          //   final ProbabilityDensity pdf = (num x) => truncatedNormalPdf(
+          //         x.toDouble(),
+          //         stats.min,
+          //         stats.max,
+          //         stats.mean,
+          //         stats.stdDev,
+          //       );
+
+          //   // Export histogram as string (default bins based on package logic)
+          //   final histogramString = values.exportHistogram(pdf: pdf);
+          //   debugPrint('Histogram for $field:\n$histogramString\n');
+
+          //   // Optionally, write to file
+          //   File('${field}_histogram.hist').writeAsString(histogramString);
+          // }
+        }
         // Интеграция fraud-виджета (если предоставлен)
         if (extraFraudAnalysisWidget != null && T == CreditCardFraudDataModel) {
           children.add(const SizedBox(height: 20));

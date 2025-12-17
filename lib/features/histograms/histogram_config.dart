@@ -3,7 +3,6 @@ import '../../core/data/data_model.dart';
 abstract class HistogramConfig<T extends DataModel> {
   List<HistogramFeature> get features;
   double? extractValue(T data, String field);
-  String formatBinLabel(int binIndex, int totalBins, List<double> values);
 }
 
 class HistogramFeature {
@@ -11,6 +10,7 @@ class HistogramFeature {
   final String field;
   final double divisor;
   final String unit;
+  final int binCount; // Добавили количество бинов
   final String? displayFormat;
 
   const HistogramFeature(
@@ -18,6 +18,7 @@ class HistogramFeature {
     this.field,
     this.divisor,
     this.unit, {
+    this.binCount = 10, // Значение по умолчанию
     this.displayFormat,
   });
 }
