@@ -84,7 +84,7 @@ class UniversalHistograms<T extends DataModel> extends StatelessWidget {
           const SizedBox(height: 8),
           
           // Статистика
-          _buildStatsSummary(values, feature),
+          _buildStatsSummary(values),
           const SizedBox(height: 16),
           
           // График
@@ -105,7 +105,7 @@ class UniversalHistograms<T extends DataModel> extends StatelessWidget {
                           barRods: [
                             BarChartRodData(
                               toY: entry.value.toDouble(),
-                              color: Colors.blue.withOpacity(0.8),
+                              color: Colors.blue.withValues(alpha:0.8),
                               width: 16,
                               borderRadius: BorderRadius.only(
                                 topLeft: Radius.circular(2),
@@ -116,7 +116,6 @@ class UniversalHistograms<T extends DataModel> extends StatelessWidget {
                         );
                       }).toList(),
                       titlesData: FlTitlesData(
-                        // Убираем стандартные подписи на оси X
                         bottomTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                         leftTitles: AxisTitles(
                           sideTitles: SideTitles(
@@ -162,10 +161,12 @@ class UniversalHistograms<T extends DataModel> extends StatelessWidget {
                           getTooltipItem: (group, groupIndex, rod, rodIndex) {
                             final count = rod.toY.toInt();
                             final start = binBoundaries[groupIndex];
-                            final end = binBoundaries[groupIndex + 1];
+                            final end = binBoundaries[groupIndex + 1] - 1;
                             
                             return BarTooltipItem(
-                              '${start.toStringAsFixed(0)}–${end.toStringAsFixed(0)} ${feature.unit}\n'
+                              values.length == feature.binCount 
+                              ? start.toStringAsFixed(0) 
+                              : '${start.toStringAsFixed(0)}–${end.toStringAsFixed(0)} ${feature.unit}\n'
                               'Количество: $count\n'
                               '(${(count / values.length * 100).toStringAsFixed(1)}%)',
                               const TextStyle(
@@ -224,7 +225,7 @@ class UniversalHistograms<T extends DataModel> extends StatelessWidget {
   }
 
   /// Строит статистическую сводку
-  Widget _buildStatsSummary(List<double> values, HistogramFeature feature) {
+  Widget _buildStatsSummary(List<double> values) {
     if (values.isEmpty) return const SizedBox();
     
     final sortedValues = List<double>.from(values)..sort();

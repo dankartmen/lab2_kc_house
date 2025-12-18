@@ -5,7 +5,7 @@ import '../data/heart_attack_data_model.dart';
 class HeartAttackHistogramConfig extends HistogramConfig<HeartAttackDataModel> {
   @override
   List<HistogramFeature> get features => [
-        HistogramFeature('Возраст', 'age', 1.0, 'лет', binCount: 30),
+        HistogramFeature('Возраст', 'age', 1.0, 'лет', binCount: 24),
         HistogramFeature('Холестерин', 'cholesterol', 1.0, 'мг/дл', binCount: 12),
         HistogramFeature('Индекс массы тела', 'bmi', 1.0, 'кг/м²', binCount: 10),
         HistogramFeature('Уровень стресса', 'stressLevel', 1.0, 'из 10', binCount: 10),
