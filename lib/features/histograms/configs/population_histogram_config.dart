@@ -21,7 +21,6 @@ class PopulationHistogramConfig implements HistogramConfig<PopulationData> {
     return data.getNumericValue(field);
   }
 
-  @override
   String formatBinLabel(int binIndex, int totalBins, List<double> values) {
     if (values.isEmpty) return '';
     

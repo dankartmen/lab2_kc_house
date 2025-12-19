@@ -1,43 +1,44 @@
-import 'dart:ui';
-
 import '../../core/data/data_model.dart';
 
-/// {@template pair_plot_config}
-/// Конфигурация для матрицы парных диаграмм (pair plots).
-/// {@endtemplate}
 abstract class PairPlotConfig<T extends DataModel> {
-  /// Список признаков для матрицы pair plots
-  List<PairPlotFeature> get features;
-
-  /// Извлекает значение для поля из объекта данных
-  double? extractValue(T data, String field);
-
-  /// Форматирует метку для осей
-  String formatValue(double value, String field);
-  
-  /// Получает цвет точки на основе данных (для окрашивания по категориям)
-  Color? getPointColor(T data, String colorField);
+  List<String> get numericFields;
+  String? get hueField; // Для цветовой группировки
+  ColorPalette? get palette; // Цветовая палитра для групп
 }
 
-/// {@template pair_plot_feature}
-/// Признак для pair plot матрицы
-/// {@endtemplate}
 class PairPlotFeature {
-  /// Поле данных
   final String field;
-  
-  /// Отображаемое имя
-  final String displayName;
-  
-  /// Делитель для значений
-  final double divisor;
+  final String title;
+  final String? displayFormat;
 
-  /// {@macro pair_plot_feature}
-  const PairPlotFeature(
-    this.field,
-    this.displayName, {
-    this.divisor = 1.0,
+  const PairPlotFeature({
+    required this.field,
+    required this.title,
+    this.displayFormat,
   });
+}
 
-  
+// Цветовые палитры для группировки
+enum ColorPalette {
+  defaultPalette, // синяя шкала
+  categorical, // для категориальных данных
+  sequential, // для последовательных данных
+  diverging, // для расходящихся данных
+}
+
+// Конфигурация стилей для парных диаграмм
+class PairPlotStyle {
+  final double dotSize;
+  final double alpha;
+  final bool showHistDiagonal;
+  final bool showKdeDiagonal;
+  final bool showCorrelation;
+
+  const PairPlotStyle({
+    this.dotSize = 2.0,
+    this.alpha = 0.6,
+    this.showHistDiagonal = true,
+    this.showKdeDiagonal = false,
+    this.showCorrelation = true,
+  });
 }

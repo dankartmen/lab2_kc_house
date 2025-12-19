@@ -3,10 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lab2_kc_house/features/box_plots/configs/house_box_plot_config.dart';
 import 'package:lab2_kc_house/features/credit_card/bloc/credit_card_fraud_bloc.dart';
 import 'package:lab2_kc_house/features/credit_card/data/credit_card_fraud_data_model.dart';
-import 'package:lab2_kc_house/features/heart_attack/pair_plots/heart_attack_pair_plot_config.dart';
 import 'package:lab2_kc_house/features/marketing/bloc/marketing_campaign_bloc.dart';
-import 'package:lab2_kc_house/features/marketing/configs/marketing_campaign_box_plot_config.dart';
-import 'package:lab2_kc_house/features/marketing/configs/marketing_campaign_histogram_config.dart';
 import 'package:lab2_kc_house/features/marketing/data/marketing_campaign_model.dart';
 
 import 'core/visualization/screens/analysis_screen.dart';
@@ -15,6 +12,7 @@ import 'features/heart_attack/box_plots/heart_attack_box_plot_config.dart';
 import 'features/heart_attack/data/heart_attack_data_model.dart';
 import 'features/heart_attack/heart_attack_analysis_widget.dart';
 import 'features/heart_attack/histograms/heart_attack_histogram_config.dart';
+import 'features/heart_attack/pair_plots/heart_attack_pair_plot_config.dart';
 import 'features/histograms/configs/house_histogram_config.dart';
 import 'features/histograms/configs/population_histogram_config.dart';
 import 'features/house/bloc/house_bloc.dart';
@@ -262,9 +260,7 @@ class MarketingCampaignAnalysisScreen extends StatelessWidget {
     return GenericAnalysisScreen<MarketingCampaignDataModel>(
       bloc: context.read<MarketingCampaignBloc>(),
       title: 'Анализ риска маркетинговой кампании',
-      histogramConfig: MarketingCampaignHistogramConfig(),
       histogramTitle: 'Гистограммы для марркетинговой кампании',
-      boxPlotConfig: MarketingCampaignBoxPlotConfig(),
       boxPlotTitle: 'Диаграммы размаха для маркетинговой кампании',
       //pairPlotTitle: 'Парные диаграммы',
       //pairPlotConfig: GroupedMarketingCampaignPairPlotConfig(),

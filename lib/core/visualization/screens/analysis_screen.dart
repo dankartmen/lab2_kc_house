@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:math';
 import 'dart:ui' as ui;
 import 'package:fl_chart/fl_chart.dart';
@@ -7,15 +6,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:lab2_kc_house/features/credit_card/data/credit_card_fraud_data_model.dart';
 import 'package:lab2_kc_house/features/heart_attack/data/heart_attack_data_model.dart';
-import 'package:sample_statistics/sample_statistics.dart';
 import '../../../features/ROC/roc_chart_widget.dart';
 import '../../../features/credit_card/bloc/credit_card_fraud_bloc.dart';
 import '../../../features/histograms/histogram_config.dart';
 import '../../../features/histograms/histogram_widget.dart';
 import '../../../features/house/data/house_data_model.dart';
-import '../../../features/pair_plots/grouped_pair_plot_config.dart';
 import '../../../features/pair_plots/pair_plot_config.dart';
-import '../../../features/pair_plots/tabbed_pair_plots.dart';
+import '../../../features/pair_plots/pair_plot_widget.dart';
 import '../../data/data_bloc.dart';
 import '../../data/data_event.dart';
 import '../../data/data_model.dart';
@@ -165,7 +162,7 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
 
   /// Конфигурация для pair plots
   final PairPlotConfig<T>? pairPlotConfig;
-
+  
   /// Заголовок для секции pair plots
   final String? pairPlotTitle;
   
@@ -249,6 +246,30 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
 
         const SizedBox(height: 16);
 
+        if (pairPlotConfig != null && pairPlotTitle != null) {
+          children.add(
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(pairPlotTitle!, 
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    PairPlot(
+                      data: state.data,
+                      config: pairPlotConfig!,
+                      title: 'Парные диаграммы',
+                      plotSize: Size(180, 180),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+          children.add(const SizedBox(height: 16));
+        }
         // Тепловая карта корреляции
         children.add(CorrelationHeatmap(
           correlationMatrix: loadedState.correlationMatrix,
@@ -294,46 +315,6 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
             ),
           );
           children.add(const SizedBox(height: 16));
-        }
-
-        // Pair plots, если конфиг предоставлен
-        if (pairPlotConfig != null && pairPlotTitle != null) {
-          debugPrint('=== PairPlotConfig type: ${pairPlotConfig.runtimeType} ===');
-          debugPrint('=== Is GroupedHeartAttackPairPlotConfig: ${pairPlotConfig is GroupedHeartAttackPairPlotConfig} ===');
-          
-          children.add(
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(pairPlotTitle!, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 16),
-                    // Временно показываем информацию о конфигурации
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      color: Colors.yellow[100],
-                      child: Column(
-                        children: [
-                          Text('Config type: ${pairPlotConfig.runtimeType}'),
-                          Text('Features count: ${pairPlotConfig?.features.length}'),
-                          Text('Is grouped: ${pairPlotConfig is GroupedHeartAttackPairPlotConfig}'),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Expanded(
-                      child: TabbedPairPlots<T>(
-                        data: loadedState.data,
-                        config: pairPlotConfig!,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
         }
 
         // Дополнительный виджет анализа (общий)

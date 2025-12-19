@@ -502,7 +502,7 @@ class _CustomerClusteringWidgetState extends State<CustomerClusteringWidget> {
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Container(
+            SizedBox(
               height: 300,
               child: ScatterChart(
                 ScatterChartData(
@@ -590,7 +590,7 @@ class _CustomerClusteringWidgetState extends State<CustomerClusteringWidget> {
             Text('WCSS (Within-Cluster Sum of Squares)',
                 style: TextStyle(color: Colors.grey[600])),
             const SizedBox(height: 16),
-            Container(
+            SizedBox(
               height: 250,
               child: LineChart(
                 LineChartData(
@@ -658,7 +658,7 @@ class _CustomerClusteringWidgetState extends State<CustomerClusteringWidget> {
             Text('Чем выше значение, тем лучше качество кластеризации',
                 style: TextStyle(color: Colors.grey[600])),
             const SizedBox(height: 16),
-            Container(
+            SizedBox(
               height: 250,
               child: LineChart(
                 LineChartData(
@@ -727,7 +727,7 @@ class _CustomerClusteringWidgetState extends State<CustomerClusteringWidget> {
             Text('Распределение по кластерам (${_getModelName()})',
                 style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
-            Container(
+            SizedBox(
               height: 250,
               child: BarChart(
                 BarChartData(
