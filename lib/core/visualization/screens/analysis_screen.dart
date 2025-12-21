@@ -261,6 +261,10 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
                       data: state.data,
                       config: pairPlotConfig!,
                       title: 'Парные диаграммы',
+                      style: const PairPlotStyle(
+                        simplified: true,
+                        maxPoints: 1000
+                      ),
                       plotSize: Size(180, 180),
                     ),
                   ],

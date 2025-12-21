@@ -33,6 +33,8 @@ class PairPlotStyle {
   final bool showHistDiagonal;
   final bool showKdeDiagonal;
   final bool showCorrelation;
+  final int maxPoints;
+  final bool simplified;
 
   const PairPlotStyle({
     this.dotSize = 2.0,
@@ -40,5 +42,27 @@ class PairPlotStyle {
     this.showHistDiagonal = true,
     this.showKdeDiagonal = false,
     this.showCorrelation = true,
+    this.maxPoints = 500,
+    this.simplified = false,
   });
+
+  PairPlotStyle copyWith({
+    double? dotSize,
+    double? alpha,
+    bool? showHistDiagonal,
+    bool? showKdeDiagonal,
+    bool? showCorrelation,
+    int? maxPoints,
+    bool? simplified,
+  }) {
+    return PairPlotStyle(
+      dotSize: dotSize ?? this.dotSize,
+      alpha: alpha ?? this.alpha,
+      showHistDiagonal: showHistDiagonal ?? this.showHistDiagonal,
+      showKdeDiagonal: showKdeDiagonal ?? this.showKdeDiagonal,
+      showCorrelation: showCorrelation ?? this.showCorrelation,
+      maxPoints: maxPoints ?? this.maxPoints,
+      simplified: simplified ?? this.simplified,
+    );
+  }
 }

@@ -31,6 +31,8 @@ class HeartAttackPairPlotConfig extends PairPlotConfig<HeartAttackDataModel> {
     showHistDiagonal: true,
     showKdeDiagonal: false,
     showCorrelation: true,
+    simplified: true, 
+    maxPoints: 1000,
   );
 }
 
