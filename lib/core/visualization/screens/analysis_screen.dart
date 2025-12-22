@@ -22,7 +22,6 @@ import '../../../features/box_plots/box_plot_config.dart';
 import '../../../features/box_plots/box_plot_widget.dart';
 import 'package:lab2_kc_house/features/credit_card/data/fraud_analysis_model.dart';
 
-
 // Новый класс для парсинга метрик из JSON
 class RegressionMetrics {
   final String model;
@@ -138,7 +137,7 @@ class ChartsData {
 /// Универсальный экран для анализа данных любого типа.
 /// Предоставляет стандартный интерфейс для загрузки, анализа и визуализации данных.
 /// {@endtemplate}
-class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
+class GenericAnalysisScreen<T extends DataModel> extends StatefulWidget {
   /// BLoC для управления состоянием данных.
   final GenericBloc<T> bloc;
 
@@ -191,37 +190,146 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
   });
 
   @override
+  State<GenericAnalysisScreen<T>> createState() => _GenericAnalysisScreenState<T>();
+}
+
+class _GenericAnalysisScreenState<T extends DataModel> extends State<GenericAnalysisScreen<T>> {
+  // Состояние для управления видимостью виджетов
+  final Map<String, bool> _visibleWidgets = {
+    'summary': true,  // Изначально только summary видим
+    'pair_plots': false,
+    'correlation_heatmap': false,
+    'histograms': false,
+    'box_plots': false,
+    'extra_analysis': false,
+    'regression_analysis': false,
+    'fraud_analysis': false,
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    // Отключаем недоступные виджеты на основе конфигураций
+    if (widget.pairPlotConfig == null || widget.pairPlotTitle == null) {
+      _visibleWidgets.remove('pair_plots');
+    }
+    if (widget.histogramConfig == null || widget.histogramTitle == null) {
+      _visibleWidgets.remove('histograms');
+    }
+    if (widget.boxPlotConfig == null || widget.boxPlotTitle == null) {
+      _visibleWidgets.remove('box_plots');
+    }
+    if (widget.extraAnalysisWidget == null) {
+      _visibleWidgets.remove('extra_analysis');
+    }
+    if (T != HouseDataModel) {
+      _visibleWidgets.remove('regression_analysis');
+    }
+    if (widget.extraFraudAnalysisWidget == null || T != CreditCardFraudDataModel) {
+      _visibleWidgets.remove('fraud_analysis');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     // Инициируем загрузку данных при создании экрана
-    if (autoLoad) {
+    if (widget.autoLoad) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        bloc.add(const LoadDataEvent());
+        widget.bloc.add(const LoadDataEvent());
         // Если это fraud-экран, автоматически загружаем анализ
-        if (extraFraudAnalysisWidget != null && bloc is CreditCardFraudBloc) {
-          bloc.add(const LoadFraudAnalysisEvent());
+        if (widget.extraFraudAnalysisWidget != null && widget.bloc is CreditCardFraudBloc) {
+          widget.bloc.add(const LoadFraudAnalysisEvent());
         }
       });
     }
 
     return BlocProvider.value(
-      value: bloc,
+      value: widget.bloc,
       child: Scaffold(
-        appBar: _buildAppBar(),
+        appBar: _buildAppBar(context),
         body: _buildBody(context),
-        floatingActionButton: _buildFloatingActionButton(),
+        floatingActionButton: _buildFloatingActionButton(context),
       ),
     );
   }
 
-  AppBar _buildAppBar() {
+  AppBar _buildAppBar(BuildContext context) {
     return AppBar(
-      title: Text(title),
+      title: Text(widget.title),
       actions: [
         IconButton(
           icon: const Icon(Icons.refresh),
-          onPressed: () => bloc.add(const LoadDataEvent()),
+          onPressed: () => widget.bloc.add(const LoadDataEvent()),
         ),
       ],
+    );
+  }
+
+  // Диалог для выбора виджетов
+  void _showWidgetSelectionDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Выберите виджеты для показа'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: _visibleWidgets.entries.map((entry) {
+                    final String key = entry.key;
+                    final bool value = entry.value;
+                    String label = '';
+                    switch (key) {
+                      case 'summary':
+                        label = 'Обзор данных';
+                        break;
+                      case 'pair_plots':
+                        label = 'Парные диаграммы';
+                        break;
+                      case 'correlation_heatmap':
+                        label = 'Тепловая карта корреляции';
+                        break;
+                      case 'histograms':
+                        label = 'Гистограммы';
+                        break;
+                      case 'box_plots':
+                        label = 'Box Plots';
+                        break;
+                      case 'extra_analysis':
+                        label = 'Дополнительный анализ';
+                        break;
+                      case 'regression_analysis':
+                        label = 'Регрессионный анализ';
+                        break;
+                      case 'fraud_analysis':
+                        label = 'Анализ мошенничества';
+                        break;
+                    }
+                    return CheckboxListTile(
+                      title: Text(label),
+                      value: value,
+                      onChanged: (bool? newValue) {
+                        setDialogState(() {
+                          _visibleWidgets[key] = newValue ?? false;
+                        });
+                        setState(() {});  // Обновляем основной state экрана
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('OK'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -241,12 +349,13 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
         final loadedState = state;
         List<Widget> children = [];
 
-        // Карточка с общим обзором данных
-        children.add(_buildDataSummary(loadedState));
+        // Условно добавляем виджеты на основе _visibleWidgets
+        if (_visibleWidgets['summary'] ?? false) {
+          children.add(_buildDataSummary(loadedState));
+          children.add(const SizedBox(height: 16));
+        }
 
-        const SizedBox(height: 16);
-
-        if (pairPlotConfig != null && pairPlotTitle != null) {
+        if (_visibleWidgets['pair_plots'] ?? false) {
           children.add(
             Card(
               child: Padding(
@@ -254,12 +363,12 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(pairPlotTitle!, 
+                    Text(widget.pairPlotTitle!, 
                         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),
                     PairPlot(
                       data: state.data,
-                      config: pairPlotConfig!,
+                      config: widget.pairPlotConfig!,
                       title: 'Парные диаграммы',
                       style: const PairPlotStyle(
                         simplified: true,
@@ -274,15 +383,15 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
           );
           children.add(const SizedBox(height: 16));
         }
-        // Тепловая карта корреляции
-        children.add(CorrelationHeatmap(
-          correlationMatrix: loadedState.correlationMatrix,
-        ));
 
-        const SizedBox(height: 16);
+        if (_visibleWidgets['correlation_heatmap'] ?? false) {
+          children.add(CorrelationHeatmap(
+            correlationMatrix: loadedState.correlationMatrix,
+          ));
+          children.add(const SizedBox(height: 16));
+        }
 
-        // Гистограммы, если конфиг предоставлен
-        if (histogramConfig != null && histogramTitle != null) {
+        if (_visibleWidgets['histograms'] ?? false) {
           children.add(
             Card(
               child: Padding(
@@ -290,9 +399,9 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(histogramTitle!, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text(widget.histogramTitle!, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),
-                    UniversalHistograms(data: state.data, config: histogramConfig!, title: title)
+                    UniversalHistograms(data: state.data, config: widget.histogramConfig!, title: widget.title)
                   ],
                 ),
               ),
@@ -301,8 +410,7 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
           children.add(const SizedBox(height: 16));
         }
 
-        // Box plot, если конфиг предоставлен
-        if (boxPlotConfig != null && boxPlotTitle != null) {
+        if (_visibleWidgets['box_plots'] ?? false) {
           children.add(
             Card(
               child: Padding(
@@ -310,9 +418,9 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(boxPlotTitle!, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text(widget.boxPlotTitle!, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),
-                    UniversalBoxPlot(data: state.data, config: boxPlotConfig!, title: title)
+                    UniversalBoxPlot(data: state.data, config: widget.boxPlotConfig!, title: widget.title)
                   ],
                 ),
               ),
@@ -321,59 +429,19 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
           children.add(const SizedBox(height: 16));
         }
 
-        // Дополнительный виджет анализа (общий)
-        if (extraAnalysisWidget != null) {
-          children.add(extraAnalysisWidget!);
+        if (_visibleWidgets['extra_analysis'] ?? false) {
+          children.add(widget.extraAnalysisWidget!);
           children.add(const SizedBox(height: 16));
         }
 
-        // Регрессионный анализ для house data (если метаданные содержат)
-        if (T == HouseDataModel && loadedState.metadata.containsKey('regression_analysis')) {
+        if (_visibleWidgets['regression_analysis'] ?? false && T == HouseDataModel && loadedState.metadata.containsKey('regression_analysis')) {
           children.add(_buildRegressionAnalysis(loadedState.metadata['regression_analysis']));
+          children.add(const SizedBox(height: 16));
         }
 
-        if (T == HeartAttackDataModel){
-          // final numericFields = [
-          //   'age',
-          //   'cholesterol',
-          //   'heartRate',
-          //   'exerciseHoursPerWeek',
-          //   'stressLevel',
-          //   'sedentaryHoursPerDay',
-          //   'income',
-          //   'bmi',
-          //   'triglycerides',
-          //   'physicalActivityDaysPerWeek',
-          //   'sleepHoursPerDay',
-          //   'heartAttackRisk',
-          // ];
-
-          // for (final field in numericFields){
-          //   final values = state.data.map((model) => model.getNumericValue(field)!).toList();
-          //   final stats = Stats(values);
-          //   debugPrint('Field: $field');
-          //   debugPrint('Min: ${stats.min}, Max: ${stats.max}, Mean: ${stats.mean}, Median: ${stats.median}, StdDev: ${stats.stdDev}');
-          //   // PDF typed to the package typedef to satisfy the exportHistogram signature
-          //   final ProbabilityDensity pdf = (num x) => truncatedNormalPdf(
-          //         x.toDouble(),
-          //         stats.min,
-          //         stats.max,
-          //         stats.mean,
-          //         stats.stdDev,
-          //       );
-
-          //   // Export histogram as string (default bins based on package logic)
-          //   final histogramString = values.exportHistogram(pdf: pdf);
-          //   debugPrint('Histogram for $field:\n$histogramString\n');
-
-          //   // Optionally, write to file
-          //   File('${field}_histogram.hist').writeAsString(histogramString);
-          // }
-        }
-        // Интеграция fraud-виджета (если предоставлен)
-        if (extraFraudAnalysisWidget != null && T == CreditCardFraudDataModel) {
+        if (_visibleWidgets['fraud_analysis'] ?? false && widget.extraFraudAnalysisWidget != null && T == CreditCardFraudDataModel) {
           children.add(const SizedBox(height: 20));
-          children.add(extraFraudAnalysisWidget!);
+          children.add(widget.extraFraudAnalysisWidget!);
         }
 
         return SingleChildScrollView(
@@ -403,9 +471,9 @@ class GenericAnalysisScreen<T extends DataModel> extends StatelessWidget {
     );
   }
 
-  FloatingActionButton _buildFloatingActionButton() {
+  FloatingActionButton _buildFloatingActionButton(BuildContext context) {
     return FloatingActionButton(
-      onPressed: () => bloc.add(AnalyzeDataEvent(fields: [])),
+      onPressed: () => _showWidgetSelectionDialog(context),
       child: const Icon(Icons.analytics),
     );
   }
