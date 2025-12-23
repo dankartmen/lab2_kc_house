@@ -52,12 +52,84 @@ class UniversalHistograms<T extends DataModel> extends StatelessWidget {
     );
   }
 
+  /// Выводит статистику по значениям в консоль
+  void _printValueStats(List<double> values, HistogramFeature feature) {
+    if (feature.field != 'age') return;
+    if (values.isEmpty) return;
+    
+    // Сортируем значения для удобного подсчета
+    values.sort();
+    
+    final uniqueValues = <double, int>{};
+    for (final value in values) {
+      uniqueValues.update(value, (count) => count + 1, ifAbsent: () => 1);
+    }
+    
+    // Выводим статистику
+    debugPrint('=== Статистика для ${feature.title} (${feature.unit}) ===');
+    debugPrint('Всего записей: ${values.length}');
+    debugPrint('Уникальных значений: ${uniqueValues.length}');
+    debugPrint('Детализация по значениям:');
+    
+    // Сортируем по значению (от меньшего к большему)
+    final sortedEntries = uniqueValues.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+    
+    // Выводим ВСЕ значения
+    for (final entry in sortedEntries) {
+      final valueStr = entry.key.toString(); // Без форматирования
+      final unitStr = feature.unit.isNotEmpty ? ' ${feature.unit}' : '';
+      final percentage = (entry.value / values.length * 100).toStringAsFixed(1);
+      debugPrint('  $valueStr$unitStr: ${entry.value} записей ($percentage%)');
+    }
+    
+    // Выводим основные статистические показатели
+    final mean = values.reduce((a, b) => a + b) / values.length;
+    final median = values[values.length ~/ 2];
+    final min = values.first;
+    final max = values.last;
+    
+    // Вычисляем стандартное отклонение
+    final squaredDiffs = values.map((v) => (v - mean) * (v - mean));
+    final variance = squaredDiffs.reduce((a, b) => a + b) / values.length;
+    final stdDev = sqrt(variance);
+    
+    debugPrint('Статистические показатели:');
+    debugPrint('  Среднее: ${mean.toStringAsFixed(2)}');
+    debugPrint('  Медиана: ${median.toStringAsFixed(2)}');
+    debugPrint('  Минимум: ${min.toStringAsFixed(2)}');
+    debugPrint('  Максимум: ${max.toStringAsFixed(2)}');
+    debugPrint('  Стандартное отклонение: ${stdDev.toStringAsFixed(2)}');
+    debugPrint('  Диапазон: ${(max - min).toStringAsFixed(2)}');
+    
+    // Выводим квартили
+    if (values.length >= 4) {
+      final q1 = values[values.length ~/ 4];
+      final q3 = values[3 * values.length ~/ 4];
+      final iqr = q3 - q1;
+      debugPrint('  Q1 (25-й перцентиль): ${q1.toStringAsFixed(2)}');
+      debugPrint('  Q3 (75-й перцентиль): ${q3.toStringAsFixed(2)}');
+      debugPrint('  IQR (межквартильный размах): ${iqr.toStringAsFixed(2)}');
+      
+      // Границы выбросов по Тьюки
+      final lowerBound = q1 - 1.5 * iqr;
+      final upperBound = q3 + 1.5 * iqr;
+      final outliers = values.where((v) => v < lowerBound || v > upperBound).length;
+      debugPrint('  Выбросы (по правилу Тьюки): $outliers записей');
+    }
+    
+    debugPrint('========================================');
+  }
+  
   Widget _buildSingleHistogram(HistogramFeature feature) {
     final values = _extractValues(feature.field, feature.divisor);
     
     if (values.isEmpty) {
       return _buildEmptyHistogram('Нет данных для ${feature.title}');
     }
+
+    // Вывод статистики в консоль
+    _printValueStats(values, feature);
 
     final binCount = feature.binCount;
     final bins = _createHistogramBins(values, binCount);
