@@ -4,6 +4,7 @@ import 'package:lab2_kc_house/features/box_plots/configs/house_box_plot_config.d
 import 'package:lab2_kc_house/features/credit_card/bloc/credit_card_fraud_bloc.dart';
 import 'package:lab2_kc_house/features/credit_card/data/credit_card_fraud_data_model.dart';
 import 'package:lab2_kc_house/features/marketing/bloc/marketing_campaign_bloc.dart';
+import 'package:lab2_kc_house/features/marketing/configs/marketing_campaign_histogram_config.dart';
 import 'package:lab2_kc_house/features/marketing/data/marketing_campaign_model.dart';
 
 import 'core/visualization/screens/analysis_screen.dart';
@@ -241,7 +242,7 @@ class HeartAttackAnalysisScreen extends StatelessWidget {
       boxPlotConfig: HeartAttackBoxPlotConfig(),
       boxPlotTitle: 'Диаграммы размаха по HeartAttackRisk',
       pairPlotTitle: 'Парные диаграммы',
-      pairPlotConfig: HeartAttackPairPlotConfig(),
+      pairPlotConfig: BiochemicalPairPlotConfig(),
       autoLoad: true,
       extraAnalysisWidget: const HeartAttackAnalysisWidget(),
     );
@@ -260,7 +261,8 @@ class MarketingCampaignAnalysisScreen extends StatelessWidget {
     return GenericAnalysisScreen<MarketingCampaignDataModel>(
       bloc: context.read<MarketingCampaignBloc>(),
       title: 'Анализ риска маркетинговой кампании',
-      histogramTitle: 'Гистограммы для марркетинговой кампании',
+      histogramTitle: 'Гистограммы для маркетинговой кампании',
+      histogramConfig: MarketingHistogramConfig(),
       boxPlotTitle: 'Диаграммы размаха для маркетинговой кампании',
       //pairPlotTitle: 'Парные диаграммы',
       //pairPlotConfig: GroupedMarketingCampaignPairPlotConfig(),

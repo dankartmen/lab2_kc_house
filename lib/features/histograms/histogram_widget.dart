@@ -54,7 +54,7 @@ class UniversalHistograms<T extends DataModel> extends StatelessWidget {
 
   /// Выводит статистику по значениям в консоль
   void _printValueStats(List<double> values, HistogramFeature feature) {
-    if (feature.field != 'age') return;
+    if (feature.field != '') return;
     if (values.isEmpty) return;
     
     // Сортируем значения для удобного подсчета

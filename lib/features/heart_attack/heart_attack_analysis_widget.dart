@@ -30,9 +30,9 @@ class HeartAttackAnalysisWidget extends StatelessWidget {
           return Center(child: Text(state.message));
         } else if (state is DataLoaded<HeartAttackDataModel>) {
           if (state.metadata.containsKey('heart_attack_analysis')) {
-            return _buildAnalysisContent(state.metadata['heart_attack_analysis']);
+            return _buildAnalysisContent(state.metadata['heart_attack_analysis'], context);
           } else if (state.metadata.containsKey('analysisError')) {
-            return _buildErrorState(state.metadata['analysisError']);
+            return _buildErrorState(state.metadata['analysisError'], context);
           }
         }
 
@@ -54,7 +54,7 @@ class HeartAttackAnalysisWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildErrorState(String error) {
+  Widget _buildErrorState(String error, BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -70,7 +70,7 @@ class HeartAttackAnalysisWidget extends StatelessWidget {
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () {
-              // Можно добавить логику повторной загрузки
+              context.read<HeartAttackBloc>().add(LoadAnalysisEvent());
             },
             child: const Text('Повторить'),
           ),
@@ -79,10 +79,10 @@ class HeartAttackAnalysisWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildAnalysisContent(Map<String, dynamic> analysis) {
+  Widget _buildAnalysisContent(Map<String, dynamic> analysis, BuildContext context) {
     // Защитная проверка структуры данных
     if (analysis.containsKey('error')) {
-      return _buildErrorState(analysis['error']);
+      return _buildErrorState(analysis['error'], context);
     }
 
     return Card(

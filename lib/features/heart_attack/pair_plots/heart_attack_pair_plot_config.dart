@@ -14,6 +14,7 @@ class HeartAttackPairPlotConfig extends PairPlotConfig<HeartAttackDataModel> {
     'heartRate',
     'stressLevel',
     'triglycerides',
+    'heartAttackRisk'
   ];
 
   /// Группировка по риску сердечного приступа
@@ -29,7 +30,7 @@ class HeartAttackPairPlotConfig extends PairPlotConfig<HeartAttackDataModel> {
     dotSize: 3.0,
     alpha: 0.7,
     showHistDiagonal: true,
-    showKdeDiagonal: false,
+    showKdeDiagonal: true,
     showCorrelation: true,
     simplified: true, 
     maxPoints: 1000,

@@ -597,20 +597,14 @@ class _CustomerClusteringWidgetState extends State<CustomerClusteringWidget> {
                   gridData: FlGridData(show: true),
                   titlesData: FlTitlesData(
                     show: true,
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          return Text(value.toInt().toString());
-                        },
-                      ),
-                    ),
+                    
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
                         getTitlesWidget: (value, meta) {
                           return Text(value.toInt().toString());
                         },
+                        reservedSize: 50
                       ),
                     ),
                   ),
@@ -646,41 +640,133 @@ class _CustomerClusteringWidgetState extends State<CustomerClusteringWidget> {
       spots.add(FlSpot(k, silhouette));
     }
     
+    double maxSilhouette = spots.map((spot) => spot.y).reduce((a,b) => a > b ? a : b);
+    int bestK = spots.where((spot) => spot.y == maxSilhouette).first.x.toInt();
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Silhouette Scores',
-                style: TextStyle(fontWeight: FontWeight.bold)),
+            Row(
+              children: [
+                Icon(Icons.assessment, color: Colors.green),
+                const SizedBox(width: 8),
+                Text(
+                  'Анализ качества кластеризации',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ],
+            ),
             const SizedBox(height: 8),
-            Text('Чем выше значение, тем лучше качество кластеризации',
-                style: TextStyle(color: Colors.grey[600])),
-            const SizedBox(height: 16),
+
+            // Карточка с пояснениями
+            Card(
+              color: Colors.blue.shade50,
+              elevation: 0,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.blue, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Что такое Silhouette Score?',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade800,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Это метрика, которая показывает, насколько хорошо каждый объект отнесен к своему кластеру.',
+                      style: TextStyle(fontSize: 13),
+                    ),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        Chip(
+                          label: Text('Значения от -1 до 1'),
+                          backgroundColor: Colors.blue.shade100,
+                          labelStyle: TextStyle(fontSize: 11),
+                        ),
+                        Chip(
+                          label: Text('Выше = лучше'),
+                          backgroundColor: Colors.green.shade100,
+                          labelStyle: TextStyle(fontSize: 11),
+                        ),
+                        Chip(
+                          label: Text('Лучший k: $bestK'),
+                          backgroundColor: Colors.orange.shade100,
+                          labelStyle: TextStyle(fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Интерпретация значений
+            Row(
+              children: [
+                _buildScoreIndicator('Плохо', Colors.red, -1.0, 0.2),
+                const SizedBox(width: 4),
+                _buildScoreIndicator('Слабо', Colors.orange, 0.2, 0.4),
+                const SizedBox(width: 4),
+                _buildScoreIndicator('Средне', Colors.yellow.shade700, 0.4, 0.6),
+                const SizedBox(width: 4),
+                _buildScoreIndicator('Хорошо', Colors.lightGreen, 0.6, 0.8),
+                const SizedBox(width: 4),
+                _buildScoreIndicator('Отлично', Colors.green, 0.8, 1.0),
+              ],
+            ),
+          const SizedBox(height: 8),
             SizedBox(
               height: 250,
               child: LineChart(
                 LineChartData(
-                  gridData: FlGridData(show: true),
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: true,
+                    getDrawingHorizontalLine:(value) {
+                      if (value == 0.2 || value == 0.4 || value == 0.6 || value == 0.8) {
+                        return FlLine(
+                          color: Colors.grey.withOpacity(0.5),
+                          strokeWidth: 1,
+                          dashArray: [5, 5],
+                        );
+                      }
+                      return FlLine(
+                        color: Colors.grey.withOpacity(0.2),
+                        strokeWidth: 1,
+                      );
+                    },
+                  ),
                   titlesData: FlTitlesData(
                     show: true,
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          return Text(value.toInt().toString());
-                        },
-                      ),
-                    ),
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
                         getTitlesWidget: (value, meta) {
                           return Text(value.toStringAsFixed(2));
                         },
+                        reservedSize: 35,
+                        maxIncluded: false
                       ),
                     ),
+                    rightTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)
+                    )
                   ),
                   borderData: FlBorderData(show: true),
                   lineBarsData: [
@@ -700,6 +786,39 @@ class _CustomerClusteringWidgetState extends State<CustomerClusteringWidget> {
       ),
     );
   }
+
+  // Вспомогательные методы для визуализации
+Widget _buildScoreIndicator(String label, Color color, double min, double max) {
+  return Expanded(
+    child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withOpacity(0.5)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: color,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(
+            '${min.toStringAsFixed(1)}-${max.toStringAsFixed(1)}',
+            style: TextStyle(
+              fontSize: 9,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
 
   Widget _buildDistributionChart() {
     final models = _clusteringData?['clustering_results']?['models'];

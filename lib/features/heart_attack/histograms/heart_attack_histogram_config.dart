@@ -12,6 +12,7 @@ class HeartAttackHistogramConfig extends HistogramConfig<HeartAttackDataModel> {
         HistogramFeature('Часы сна', 'sleepHoursPerDay', 1.0, 'ч', binCount: 8),
         HistogramFeature('Частота сердцебиения', 'heartRate', 1, 'уд/мин', binCount: 10),
         HistogramFeature('Физическая активность', 'physicalActivity', 1.0, 'ч/нед', binCount: 10),
+        HistogramFeature('Риск', 'heartAttackRisk', 1,'', binCount: 2)
       ];
 
   @override
