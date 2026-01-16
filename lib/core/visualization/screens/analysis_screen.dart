@@ -17,7 +17,7 @@ import '../../data/data_bloc.dart';
 import '../../data/data_event.dart';
 import '../../data/data_model.dart';
 import '../../data/data_state.dart';
-import '../charts/correlation_heatmap.dart';
+import '../charts/correlation_heatmap/correlation_heatmap.dart';
 import '../../../features/box_plots/box_plot_config.dart';
 import '../../../features/box_plots/box_plot_widget.dart';
 import 'package:lab2_kc_house/features/credit_card/data/fraud_analysis_model.dart';
