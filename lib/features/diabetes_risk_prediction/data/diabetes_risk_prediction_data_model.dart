@@ -9,146 +9,181 @@ class DiabetesRiskPredictionDataModel extends DataModel {
   final int age;
 
   /// Пол (Male/Female).
-  final String sex;
+  final String gender;
 
   /// Полиурия (Yes/No).
-  final double polyuria;
+  final String polyuria;
 
-  /// Полидипсия(Yes/No).
+  /// Полидипсия (Yes/No).
   final String polydipsia;
 
-  /// Внезапнавя потеря веса(Yes/No).
-  final int suddenWeightLoss;
+  /// Внезапная потеря веса (Yes/No).
+  final String suddenWeightLoss;
 
-  /// Слабость(Yes/No).
-  final int weakness;
+  /// Слабость (Yes/No).
+  final String weakness;
 
-  /// Полифагия(Yes/No).
-  final int polyphagia;
+  /// Полифагия (Yes/No).
+  final String polyphagia;
 
-  /// Молочница(Yes/No).
-  final int genitalThrush;
+  /// Молочница (Yes/No).
+  final String genitalThrush;
 
-  /// Нечеткое зрение(Yes/No).
-  final int visualBlurring;
+  /// Нечеткое зрение (Yes/No).
+  final String visualBlurring;
 
-  /// Зуд(Yes/No).
-  final int itching;
+  /// Зуд (Yes/No).
+  final String itching;
 
-  /// Раздражительность(Yes/No).
-  final double irritability;
+  /// Раздражительность (Yes/No).
+  final String irritability;
 
-  /// Замедленное заживление ран, тканей(Yes/No).
+  /// Замедленное заживление ран, тканей (Yes/No).
   final String delayedHealing;
 
-  /// Частичный паралич(Yes/No).
-  final int partialParesis;
+  /// Частичный паралич (Yes/No).
+  final String partialParesis;
 
-  /// Мышечная скованность(Yes/No).
-  final int muscleStiffness;
+  /// Мышечная скованность (Yes/No).
+  final String muscleStiffness;
 
-  /// Алопеция(выпадение волос)(Yes/No).
-  final int alopecia;
+  /// Алопеция (выпадение волос) (Yes/No).
+  final String alopecia;
 
-  /// Ожирение(Yes/No).
-  final double obesity;
+  /// Ожирение (Yes/No).
+  final String obesity;
 
-  /// Класс(Positive/Negative). 
-  final double class;
+  /// Результат (Positive/Negative).
+  final String result;
 
-
-  /// {@macro heart_attack_data_model}
+  /// {@macro diabetes_risk_prediction_data_model}
   const DiabetesRiskPredictionDataModel({
     required this.age,
-    required this.sex, 
-    this.polyuria, 
-    required this.polydipsia, 
-    required this.suddenWeightLoss, 
-    required this.weakness, 
-    required this.polyphagia, 
-    required this.genitalThrush, 
-    required this.visualBlurring, 
-    required this.itching, 
-    this.irritability, 
-    required this.delayedHealing, 
-    required this.partialParesis, 
-    required this.muscleStiffness, 
-    required this.alopecia, 
-    this.obesity, 
-    this.double,
+    required this.gender,
+    required this.polyuria,
+    required this.polydipsia,
+    required this.suddenWeightLoss,
+    required this.weakness,
+    required this.polyphagia,
+    required this.genitalThrush,
+    required this.visualBlurring,
+    required this.itching,
+    required this.irritability,
+    required this.delayedHealing,
+    required this.partialParesis,
+    required this.muscleStiffness,
+    required this.alopecia,
+    required this.obesity,
+    required this.result,
   });
 
   /// Создаёт модель из CSV-строки (row из CsvToListConverter).
   factory DiabetesRiskPredictionDataModel.fromCsv(List<dynamic> row) {
     return DiabetesRiskPredictionDataModel(
-      age: int.tryParse(row[1].toString()) ?? 0,
-      sex: row[2].toString(),
-      cholesterol: double.tryParse(row[3].toString()) ?? 0.0,
-      bloodPressure: row[4].toString(),
-      heartRate: int.tryParse(row[5].toString()) ?? 0,
-      diabetes: int.tryParse(row[6].toString()) ?? 0,
-      familyHistory: int.tryParse(row[7].toString()) ?? 0,
-      smoking: int.tryParse(row[8].toString()) ?? 0,
-      obesity: int.tryParse(row[9].toString()) ?? 0,
-      alcoholConsumption: int.tryParse(row[10].toString()) ?? 0,
-      exerciseHoursPerWeek: double.tryParse(row[11].toString()) ?? 0.0,
-      diet: row[12].toString(),
-      previousHeartProblems: int.tryParse(row[13].toString()) ?? 0,
-      medicationUse: int.tryParse(row[14].toString()) ?? 0,
-      stressLevel: int.tryParse(row[15].toString()) ?? 0,
-      sedentaryHoursPerDay: double.tryParse(row[16].toString()) ?? 0.0,
-      income: double.tryParse(row[17].toString()) ?? 0.0,
+      age: int.tryParse(row[0].toString()) ?? 0,
+      gender: row[1].toString().trim(),
+      polyuria: row[2].toString().trim(),
+      polydipsia: row[3].toString().trim(),
+      suddenWeightLoss: row[4].toString().trim(),
+      weakness: row[5].toString().trim(),
+      polyphagia: row[6].toString().trim(),
+      genitalThrush: row[7].toString().trim(),
+      visualBlurring: row[8].toString().trim(),
+      itching: row[9].toString().trim(),
+      irritability: row[10].toString().trim(),
+      delayedHealing: row[11].toString().trim(),
+      partialParesis: row[12].toString().trim(),
+      muscleStiffness: row[13].toString().trim(),
+      alopecia: row[14].toString().trim(),
+      obesity: row[15].toString().trim(),
+      result: row[16].toString().trim(),
     );
   }
 
   @override
   Map<String, dynamic> toJson() => {
         'age': age,
-        'sex': sex,
-        'cholesterol': cholesterol,
-        'bloodPressure': bloodPressure,
-        'heartRate': heartRate,
-        'diabetes': diabetes,
-        'familyHistory': familyHistory,
-        'smoking': smoking,
+        'gender': gender,
+        'polyuria': polyuria,
+        'polydipsia': polydipsia,
+        'suddenWeightLoss': suddenWeightLoss,
+        'weakness': weakness,
+        'polyphagia': polyphagia,
+        'genitalThrush': genitalThrush,
+        'visualBlurring': visualBlurring,
+        'itching': itching,
+        'irritability': irritability,
+        'delayedHealing': delayedHealing,
+        'partialParesis': partialParesis,
+        'muscleStiffness': muscleStiffness,
+        'alopecia': alopecia,
         'obesity': obesity,
-        'alcoholConsumption': alcoholConsumption,
-        'exerciseHoursPerWeek': exerciseHoursPerWeek,
-        'diet': diet,
-        'previousHeartProblems': previousHeartProblems,
-        'medicationUse': medicationUse,
-        'stressLevel': stressLevel,
-        'sedentaryHoursPerDay': sedentaryHoursPerDay,
-        'income': income,
+        'result': result,
       };
+
+  @override
+  String getDisplayName() => 'Age: $age, Result: $result';
 
   @override
   List<String> getNumericFields() => [
         'age',
-        'cholesterol',
-        'heartRate',
-        'exerciseHoursPerWeek',
-        'stressLevel',
-        'sedentaryHoursPerDay',
-        'income',
-        'bmi',
-        'triglycerides',
-        'physicalActivityDaysPerWeek',
-        'sleepHoursPerDay',
-        'heartAttackRisk',
       ];
 
   @override
   double? getNumericValue(String field) {
     switch (field) {
       case 'age': return age.toDouble();
-      case 'cholesterol': return cholesterol;
-      case 'heartRate': return heartRate.toDouble();
-      case 'exerciseHoursPerWeek': return exerciseHoursPerWeek;
-      case 'stressLevel': return stressLevel.toDouble();
-      case 'sedentaryHoursPerDay': return sedentaryHoursPerDay;
-      case 'income': return income;
       default: return null;
     }
   }
+
+  /// Конвертирует строковые Yes/No значения в числовые (1.0/0.0)
+  double? getBinaryValue(String field) {
+    switch (field) {
+      case 'polyuria': return _convertToBinary(polyuria);
+      case 'polydipsia': return _convertToBinary(polydipsia);
+      case 'suddenWeightLoss': return _convertToBinary(suddenWeightLoss);
+      case 'weakness': return _convertToBinary(weakness);
+      case 'polyphagia': return _convertToBinary(polyphagia);
+      case 'genitalThrush': return _convertToBinary(genitalThrush);
+      case 'visualBlurring': return _convertToBinary(visualBlurring);
+      case 'itching': return _convertToBinary(itching);
+      case 'irritability': return _convertToBinary(irritability);
+      case 'delayedHealing': return _convertToBinary(delayedHealing);
+      case 'partialParesis': return _convertToBinary(partialParesis);
+      case 'muscleStiffness': return _convertToBinary(muscleStiffness);
+      case 'alopecia': return _convertToBinary(alopecia);
+      case 'obesity': return _convertToBinary(obesity);
+      case 'result': return _convertToBinary(result);
+      default: return null;
+    }
+  }
+
+  double _convertToBinary(String value) {
+    if (value.toLowerCase() == 'yes' || value.toLowerCase() == 'positive') {
+      return 1.0;
+    } else if (value.toLowerCase() == 'no' || value.toLowerCase() == 'negative') {
+      return 0.0;
+    }
+    return 0.0;
+  }
+
+  /// Список всех бинарных полей
+  List<String> getBinaryFields() => [
+    'polyuria',
+    'polydipsia',
+    'suddenWeightLoss',
+    'weakness',
+    'polyphagia',
+    'genitalThrush',
+    'visualBlurring',
+    'itching',
+    'irritability',
+    'delayedHealing',
+    'partialParesis',
+    'muscleStiffness',
+    'alopecia',
+    'obesity',
+    'result',
+  ];
 }

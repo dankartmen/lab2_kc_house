@@ -8,6 +8,11 @@ import 'package:lab2_kc_house/features/marketing/configs/marketing_campaign_hist
 import 'package:lab2_kc_house/features/marketing/data/marketing_campaign_model.dart';
 
 import 'core/visualization/screens/analysis_screen.dart';
+import 'features/diabetes_risk_prediction/bloc/diabetes_bloc.dart';
+import 'features/diabetes_risk_prediction/configs/diabetes_box_plot_config.dart';
+import 'features/diabetes_risk_prediction/configs/diabetes_histogram_config.dart';
+import 'features/diabetes_risk_prediction/configs/diabetes_pair_plot_config.dart';
+import 'features/diabetes_risk_prediction/data/diabetes_risk_prediction_data_model.dart';
 import 'features/heart_attack/bloc/heart_attack_bloc.dart';
 import 'features/heart_attack/box_plots/heart_attack_box_plot_config.dart';
 import 'features/heart_attack/data/heart_attack_data_model.dart';
@@ -156,6 +161,25 @@ class HomeScreen extends StatelessWidget {
               ),
               child: const Text('Анализ маркетинговой кампании'),
             ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => BlocProvider(
+                      create: (_) => DiabetesBloc(),
+                      child: const DiabetesAnalysisScreen(),
+                    ),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+                textStyle: const TextStyle(fontSize: 18),
+              ),
+              child: const Text('Анализ риска диабета'),
+            ),
           ],
         ),
       ),
@@ -269,6 +293,29 @@ class MarketingCampaignAnalysisScreen extends StatelessWidget {
       extraAnalysisWidget: const CustomerClusteringWidget(
         apiUrl: "http://195.225.111.85:8000/api/customer-clustering",
       ),
+      autoLoad: true,
+    );
+  }
+}
+
+/// {@template diabetes_analysis_screen}
+/// Специализированный экран для анализа данных о рисках диабета.
+/// {@endtemplate}
+class DiabetesAnalysisScreen extends StatelessWidget {
+  /// {@macro diabetes_analysis_screen}
+  const DiabetesAnalysisScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return GenericAnalysisScreen<DiabetesRiskPredictionDataModel>(
+      bloc: context.read<DiabetesBloc>(),
+      title: 'Анализ риска диабета',
+      histogramConfig: DiabetesHistogramConfig(),
+      histogramTitle: 'Гистограммы распределения симптомов',
+      boxPlotConfig: DiabetesBoxPlotConfig(),
+      boxPlotTitle: 'Диаграммы размаха по результату теста',
+      pairPlotTitle: 'Парные диаграммы симптомов',
+      pairPlotConfig: SymptomsPairPlotConfig(),
       autoLoad: true,
     );
   }
