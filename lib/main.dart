@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lab2_kc_house/features/box_plots/configs/house_box_plot_config.dart';
 import 'package:lab2_kc_house/features/credit_card/bloc/credit_card_fraud_bloc.dart';
 import 'package:lab2_kc_house/features/credit_card/data/credit_card_fraud_data_model.dart';
+import 'package:lab2_kc_house/features/diabetes_risk_prediction/diabetes_analysis_widget.dart';
 import 'package:lab2_kc_house/features/marketing/bloc/marketing_campaign_bloc.dart';
 import 'package:lab2_kc_house/features/marketing/configs/marketing_campaign_histogram_config.dart';
 import 'package:lab2_kc_house/features/marketing/data/marketing_campaign_model.dart';
@@ -317,6 +318,7 @@ class DiabetesAnalysisScreen extends StatelessWidget {
       pairPlotTitle: 'Парные диаграммы симптомов',
       pairPlotConfig: SymptomsPairPlotConfig(),
       autoLoad: true,
+      extraAnalysisWidget: DiabetesAnalysisWidget(),
     );
   }
 }
