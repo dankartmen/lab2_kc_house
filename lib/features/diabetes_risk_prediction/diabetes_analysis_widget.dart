@@ -1,4 +1,5 @@
 import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:http/http.dart' as http;
@@ -15,8 +16,6 @@ class _DiabetesAnalysisWidgetState extends State<DiabetesAnalysisWidget> {
   Map<String, dynamic>? _analysisData;
   bool _isLoading = false;
   String _error = '';
-  int _selectedMetric = 0; // 0: accuracy, 1: precision, 2: recall, 3: f1, 4: auc
-  int _selectedModelForROC = 0;
 
   @override
   void initState() {
@@ -33,7 +32,7 @@ class _DiabetesAnalysisWidgetState extends State<DiabetesAnalysisWidget> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.234.193/api/diabetes-analysis'),
+        Uri.parse('http://0.0.0.0:8000/api/diabetes-analysis'),
       );
 
       if (response.statusCode == 200) {
@@ -92,13 +91,10 @@ class _DiabetesAnalysisWidgetState extends State<DiabetesAnalysisWidget> {
             _buildDatasetInfo(),
             const SizedBox(height: 16),
             
-            _buildComparisonCharts(),
+            _buildMetricsCard(),
             const SizedBox(height: 16),
             
-            _buildMetricsTable(),
-            const SizedBox(height: 16),
-            
-            _buildROCCurves(),
+            _buildROCCurve(),
             const SizedBox(height: 16),
             
             _buildFeatureImportance(),
@@ -120,7 +116,7 @@ class _DiabetesAnalysisWidgetState extends State<DiabetesAnalysisWidget> {
           CircularProgressIndicator(),
           SizedBox(height: 20),
           Text(
-            'Анализ моделей диабета...',
+            'Анализ модели логистической регрессии...',
             style: TextStyle(fontSize: 16),
           ),
         ],
@@ -184,21 +180,21 @@ class _DiabetesAnalysisWidgetState extends State<DiabetesAnalysisWidget> {
   Widget _buildHeader() {
     return Row(
       children: [
-        const Icon(Icons.monitor_heart, color: Colors.green, size: 32),
+        const Icon(Icons.linear_scale, color: Colors.green, size: 32),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Анализ моделей предсказания диабета',
+                'Анализ логистической регрессии для диабета',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               Text(
-                'Сравнение производительности алгоритмов машинного обучения',
+                'Модель классификации с оценкой метрик precision, recall, F1-score и ROC-кривой',
                 style: TextStyle(color: Colors.grey[600], fontSize: 12),
               ),
             ],
@@ -236,11 +232,18 @@ class _DiabetesAnalysisWidgetState extends State<DiabetesAnalysisWidget> {
                   Text('Признаков: ${datasetInfo['features_used'] ?? 0}'),
                   Text('Положительных случаев: ${datasetInfo['positive_cases'] ?? 0} (${datasetInfo['positive_percentage']?.toStringAsFixed(1) ?? '0'}%)'),
                   Text('Train/Test: ${datasetInfo['train_samples'] ?? 0}/${datasetInfo['test_samples'] ?? 0}'),
-                  if (_analysisData?['best_model'] != null)
-                    Text(
-                      'Лучшая модель: ${_analysisData?['best_model']}',
-                      style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(4),
                     ),
+                    child: const Text(
+                      'Модель: Logistic Regression',
+                      style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -250,46 +253,13 @@ class _DiabetesAnalysisWidgetState extends State<DiabetesAnalysisWidget> {
     );
   }
 
-  Widget _buildComparisonCharts() {
-    final comparisonData = _analysisData?['comparison_data'];
-    if (comparisonData == null) return Container();
+  Widget _buildMetricsCard() {
+    final modelResults = _analysisData?['models_results']?['Logistic Regression'];
+    if (modelResults == null) return Container();
     
-    final List<String> models = List<String>.from(comparisonData['models'] ?? []);
-    final List<double> testAccuracy = List<double>.from(comparisonData['test_accuracy'] ?? []);
-    final List<double> testPrecision = List<double>.from(comparisonData['test_precision'] ?? []);
-    final List<double> testRecall = List<double>.from(comparisonData['test_recall'] ?? []);
-    final List<double> testF1 = List<double>.from(comparisonData['test_f1'] ?? []);
-    final List<double> aucScores = List<double>.from(comparisonData['auc_scores'] ?? []);
-    
-    // Выбор метрики для отображения
-    List<double> selectedMetricData;
-    String metricName;
-    
-    switch (_selectedMetric) {
-      case 0:
-        selectedMetricData = testAccuracy;
-        metricName = 'Accuracy';
-        break;
-      case 1:
-        selectedMetricData = testPrecision;
-        metricName = 'Precision';
-        break;
-      case 2:
-        selectedMetricData = testRecall;
-        metricName = 'Recall';
-        break;
-      case 3:
-        selectedMetricData = testF1;
-        metricName = 'F1-Score';
-        break;
-      case 4:
-        selectedMetricData = aucScores;
-        metricName = 'AUC';
-        break;
-      default:
-        selectedMetricData = testAccuracy;
-        metricName = 'Accuracy';
-    }
+    final trainMetrics = modelResults['train_metrics'] ?? {};
+    final testMetrics = modelResults['test_metrics'] ?? {};
+    final aucScore = modelResults['auc_score'];
     
     return Card(
       child: Padding(
@@ -298,181 +268,99 @@ class _DiabetesAnalysisWidgetState extends State<DiabetesAnalysisWidget> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Сравнение метрик моделей',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            
-            // Выбор метрики
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildMetricChip('Accuracy', 0),
-                  const SizedBox(width: 8),
-                  _buildMetricChip('Precision', 1),
-                  const SizedBox(width: 8),
-                  _buildMetricChip('Recall', 2),
-                  const SizedBox(width: 8),
-                  _buildMetricChip('F1-Score', 3),
-                  const SizedBox(width: 8),
-                  _buildMetricChip('AUC', 4),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // График
-            SizedBox(
-              height: 250,
-              child: BarChart(
-                BarChartData(
-                  alignment: BarChartAlignment.spaceAround,
-                  barTouchData: BarTouchData(enabled: true),
-                  titlesData: FlTitlesData(
-                    show: true,
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          if (value.toInt() >= 0 && value.toInt() < models.length) {
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 8.0),
-                              child: Text(
-                                models[value.toInt()],
-                                style: const TextStyle(fontSize: 10),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            );
-                          }
-                          return const Text('');
-                        },
-                      ),
-                    ),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          return Text(value.toStringAsFixed(2));
-                        },
-                      ),
-                    ),
-                  ),
-                  borderData: FlBorderData(show: true),
-                  barGroups: List.generate(
-                    models.length,
-                    (index) => BarChartGroupData(
-                      x: index,
-                      barRods: [
-                        BarChartRodData(
-                          toY: selectedMetricData[index],
-                          color: _getModelColor(index),
-                          width: 20,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            
-            const SizedBox(height: 8),
-            Text(
-              'Метрика: $metricName',
-              style: const TextStyle(fontStyle: FontStyle.italic),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMetricChip(String label, int index) {
-    return ActionChip(
-      label: Text(label),
-      backgroundColor: _selectedMetric == index ? Colors.blue.shade100 : null,
-      onPressed: () => setState(() => _selectedMetric = index),
-    );
-  }
-
-  Widget _buildMetricsTable() {
-    final modelsResults = _analysisData?['models_results'];
-    if (modelsResults == null) return Container();
-    
-    final models = modelsResults.keys.toList();
-    
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Детальные метрики моделей',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              'Метрики производительности',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
             const SizedBox(height: 12),
             
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                columns: const [
-                  DataColumn(label: Text('Модель')),
-                  DataColumn(label: Text('Train\nAcc', textAlign: TextAlign.center)),
-                  DataColumn(label: Text('Test\nAcc', textAlign: TextAlign.center)),
-                  DataColumn(label: Text('Test\nPrecision', textAlign: TextAlign.center)),
-                  DataColumn(label: Text('Test\nRecall', textAlign: TextAlign.center)),
-                  DataColumn(label: Text('Test\nF1', textAlign: TextAlign.center)),
-                  DataColumn(label: Text('AUC', textAlign: TextAlign.center)),
-                ],
-                rows: models.map((modelName) {
-                  final modelData = modelsResults[modelName];
-                  
-                  if (modelData?['test_metrics'] == null) {
-                    return DataRow(cells: [
-                      DataCell(Text(modelName)),
-                      const DataCell(Text('N/A')),
-                      const DataCell(Text('N/A')),
-                      const DataCell(Text('N/A')),
-                      const DataCell(Text('N/A')),
-                      const DataCell(Text('N/A')),
-                      const DataCell(Text('N/A')),
-                    ]);
-                  }
-                  
-                  final trainMetrics = modelData['train_metrics'] ?? {};
-                  final testMetrics = modelData['test_metrics'] ?? {};
-                  final aucScore = modelData['auc_score'];
-                  
-                  return DataRow(
-                    color: MaterialStateProperty.resolveWith<Color?>(
-                      (Set<MaterialState> states) {
-                        if (modelName == _analysisData?['best_model']) {
-                          return Colors.green.withOpacity(0.1);
-                        }
-                        return null;
-                      },
-                    ),
-                    cells: [
-                      DataCell(
-                        Text(
-                          modelName,
-                          style: modelName == _analysisData?['best_model']
-                              ? const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)
-                              : null,
-                        ),
-                      ),
-                      DataCell(_buildMetricCell(trainMetrics['accuracy'])),
-                      DataCell(_buildMetricCell(testMetrics['accuracy'])),
-                      DataCell(_buildMetricCell(testMetrics['precision'])),
-                      DataCell(_buildMetricCell(testMetrics['recall'])),
-                      DataCell(_buildMetricCell(testMetrics['f1_score'])),
-                      DataCell(_buildMetricCell(aucScore)),
-                    ],
-                  );
-                }).toList(),
-              ),
+            // Тренировочная выборка
+            _buildMetricsSection('Тренировочная выборка', trainMetrics),
+            const SizedBox(height: 16),
+            
+            // Тестовая выборка
+            _buildMetricsSection('Тестовая выборка', testMetrics),
+            const SizedBox(height: 16),
+            
+            // AUC Score
+            if (aucScore != null)
+              _buildAUCScore(aucScore),
+            
+            // Кросс-валидация
+            _buildCrossValidation(modelResults['cross_validation']),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMetricsSection(String title, Map<String, dynamic> metrics) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
+        ),
+        const SizedBox(height: 8),
+        
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2,
+          childAspectRatio: 2.5,
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          children: [
+            _buildMetricCard('Accuracy', metrics['accuracy'], 'Доля верных предсказаний'),
+            _buildMetricCard('Precision', metrics['precision'], 'Точность положительных предсказаний'),
+            _buildMetricCard('Recall', metrics['recall'], 'Полнота выявления положительных случаев'),
+            _buildMetricCard('F1-Score', metrics['f1_score'], 'Сбалансированная метрика'),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMetricCard(String label, dynamic value, String description) {
+    final numValue = (value as num?)?.toDouble();
+    final formatted = numValue?.toStringAsFixed(3) ?? 'N/A';
+    
+    Color color = Colors.black;
+    if (numValue != null) {
+      if (numValue >= 0.9) {
+        color = Colors.green;
+      } else if (numValue >= 0.8) {
+        color = Colors.blue.shade700;
+      } else if (numValue >= 0.7) {
+        color = Colors.orange;
+      } else {
+        color = Colors.red;
+      }
+    }
+    
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              formatted,
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              description,
+              style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -480,39 +368,122 @@ class _DiabetesAnalysisWidgetState extends State<DiabetesAnalysisWidget> {
     );
   }
 
-  Widget _buildMetricCell(dynamic value) {
-    if (value == null) return const Text('N/A', style: TextStyle(color: Colors.grey));
-    
-    final numValue = (value as num).toDouble();
-    final formatted = numValue.toStringAsFixed(3);
-    
-    // Цветовая индикация
+  Widget _buildAUCScore(double aucScore) {
     Color color = Colors.black;
-    if (numValue >= 0.9) {
+    String quality = '';
+    
+    if (aucScore >= 0.9) {
       color = Colors.green;
-    } else if (numValue >= 0.7) {
-      color = Colors.blue;
-    } else if (numValue >= 0.5) {
+      quality = 'Отлично';
+    } else if (aucScore >= 0.8) {
+      color = Colors.blue.shade700;
+      quality = 'Хорошо';
+    } else if (aucScore >= 0.7) {
       color = Colors.orange;
+      quality = 'Удовлетворительно';
     } else {
       color = Colors.red;
+      quality = 'Плохо';
     }
     
-    return Text(
-      formatted,
-      style: TextStyle(color: color, fontWeight: FontWeight.bold),
+    return Card(
+      color: color.withOpacity(0.1),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Icon(Icons.trending_up, color: color),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'AUC-ROC Score',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: color),
+                  ),
+                  Text(
+                    'Площадь под ROC-кривой',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  aucScore.toStringAsFixed(4),
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color),
+                ),
+                Text(
+                  quality,
+                  style: TextStyle(fontSize: 12, color: color),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildROCCurves() {
-    final modelsResults = _analysisData?['models_results'];
-    if (modelsResults == null) return Container();
+  Widget _buildCrossValidation(Map<String, dynamic>? cvData) {
+    if (cvData == null) return Container();
     
-    final models = modelsResults.keys.toList();
-    final selectedModel = models[_selectedModelForROC];
-    final modelData = modelsResults[selectedModel];
-    final rocData = modelData?['roc_curve'];
-    final aucScore = modelData?['auc_score'];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Кросс-валидация (5 folds)',
+          style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
+        ),
+        const SizedBox(height: 8),
+        
+        Row(
+          children: [
+            _buildCVCard('Accuracy', cvData['accuracy']),
+            const SizedBox(width: 12),
+            _buildCVCard('F1-Score', cvData['f1_score']),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCVCard(String label, Map<String, dynamic> data) {
+    return Expanded(
+      child: Card(
+        elevation: 1,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Mean: ${data['mean']?.toStringAsFixed(3) ?? 'N/A'}',
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              ),
+              Text(
+                'Std: ${data['std']?.toStringAsFixed(3) ?? 'N/A'}',
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildROCCurve() {
+    final modelResults = _analysisData?['models_results']?['Logistic Regression'];
+    final rocData = modelResults?['roc_curve'];
+    final aucScore = modelResults?['auc_score'];
     
     if (rocData == null) {
       return Card(
@@ -520,9 +491,9 @@ class _DiabetesAnalysisWidgetState extends State<DiabetesAnalysisWidget> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              const Text('ROC-кривые недоступны', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text('ROC-кривая недоступна', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              const Text('Некоторые модели не поддерживают вероятностные предсказания'),
+              const Text('Невозможно построить ROC-кривую для текущей модели'),
             ],
           ),
         ),
@@ -535,37 +506,9 @@ class _DiabetesAnalysisWidgetState extends State<DiabetesAnalysisWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                const Text(
-                  'ROC-кривые',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const Spacer(),
-                // Выбор модели для ROC
-                DropdownButton<int>(
-                  value: _selectedModelForROC,
-                  items: List.generate(models.length, (index) {
-                    final modelName = models[index];
-                    final hasROC = modelsResults[modelName]?['roc_curve'] != null;
-                    return DropdownMenuItem<int>(
-                      value: index,
-                      enabled: hasROC,
-                      child: Text(
-                        modelName,
-                        style: TextStyle(
-                          color: hasROC ? Colors.black : Colors.grey,
-                        ),
-                      ),
-                    );
-                  }),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() => _selectedModelForROC = value);
-                    }
-                  },
-                ),
-              ],
+            const Text(
+              'ROC-кривая (Logistic Regression)',
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
             
             const SizedBox(height: 8),
@@ -582,6 +525,10 @@ class _DiabetesAnalysisWidgetState extends State<DiabetesAnalysisWidget> {
               height: 300,
               child: _buildROCChart(rocData),
             ),
+            
+            const SizedBox(height: 16),
+            
+            _buildROCLegend(),
           ],
         ),
       ),
@@ -648,7 +595,7 @@ class _DiabetesAnalysisWidgetState extends State<DiabetesAnalysisWidget> {
         minY: 0,
         maxY: 1,
         lineBarsData: [
-          // ROC-кривая
+          // ROC-кривая модели
           LineChartBarData(
             spots: spots,
             isCurved: true,
@@ -672,15 +619,38 @@ class _DiabetesAnalysisWidgetState extends State<DiabetesAnalysisWidget> {
     );
   }
 
+  Widget _buildROCLegend() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _buildLegendItem('Logistic Regression', Colors.blue),
+        const SizedBox(width: 20),
+        _buildLegendItem('Случайный классификатор', Colors.grey),
+      ],
+    );
+  }
+
+  Widget _buildLegendItem(String text, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 16,
+          height: 3,
+          color: color,
+        ),
+        const SizedBox(width: 8),
+        Text(
+          text,
+          style: const TextStyle(fontSize: 12),
+        ),
+      ],
+    );
+  }
+
   Widget _buildFeatureImportance() {
-    final modelsResults = _analysisData?['models_results'];
-    if (modelsResults == null) return Container();
-    
-    final bestModelName = _analysisData?['best_model'];
-    if (bestModelName == null) return Container();
-    
-    final bestModelData = modelsResults[bestModelName];
-    final featureImportance = bestModelData?['feature_importance'];
+    final modelResults = _analysisData?['models_results']?['Logistic Regression'];
+    final featureImportance = modelResults?['feature_importance'];
     
     if (featureImportance == null || featureImportance.isEmpty) {
       return Container();
@@ -698,9 +668,9 @@ class _DiabetesAnalysisWidgetState extends State<DiabetesAnalysisWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Важность признаков (${bestModelName})',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+            const Text(
+              'Важность признаков (Logistic Regression)',
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
@@ -791,32 +761,31 @@ class _DiabetesAnalysisWidgetState extends State<DiabetesAnalysisWidget> {
           children: [
             const Text(
               'Интерпретация результатов',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
             const SizedBox(height: 12),
             
-            if (interpretation['best_model'] != null)
+            // Производительность модели
+            if (interpretation['model_performance'] != null)
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Лучшая модель:', style: TextStyle(fontWeight: FontWeight.w500)),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.green.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.green.shade200),
-                    ),
-                    child: Text(
-                      interpretation['best_model'],
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
-                    ),
+                  const Text(
+                    'Производительность модели:',
+                    style: TextStyle(fontWeight: FontWeight.w500),
                   ),
+                  const SizedBox(height: 8),
+                  ...(interpretation['model_performance'] as List).map((item) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text('• $item'),
+                    );
+                  }).toList(),
                   const SizedBox(height: 16),
                 ],
               ),
             
+            // Качество данных
             if (interpretation['data_quality'] != null)
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -828,32 +797,58 @@ class _DiabetesAnalysisWidgetState extends State<DiabetesAnalysisWidget> {
                 ],
               ),
             
+            // Рекомендации
             if (interpretation['recommendation'] != null)
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text('Рекомендации:', style: TextStyle(fontWeight: FontWeight.w500)),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   ...(interpretation['recommendation'] as List).map((item) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('• ', style: TextStyle(fontWeight: FontWeight.bold)),
+                          Expanded(child: Text(item)),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            
+            // Ключевые признаки
+            if (interpretation['key_features'] != null)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Ключевые признаки:', style: TextStyle(fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 8),
+                  ...(interpretation['key_features'] as List).map((item) {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Text('• $item'),
                     );
                   }).toList(),
+                  const SizedBox(height: 8),
                 ],
               ),
             
-            if (interpretation['key_features'] != null)
+            // Интерпретация коэффициентов
+            if (interpretation['model_interpretation'] != null)
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 16),
-                  const Text('Ключевые признаки:', style: TextStyle(fontWeight: FontWeight.w500)),
-                  const SizedBox(height: 4),
-                  ...(interpretation['key_features'] as List).map((item) {
+                  const Text('Интерпретация коэффициентов:', style: TextStyle(fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 8),
+                  ...(interpretation['model_interpretation'] as List).map((item) {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 4),
-                      child: Text('• $item'),
+                      child: Text(item),
                     );
                   }).toList(),
                 ],
@@ -862,17 +857,5 @@ class _DiabetesAnalysisWidgetState extends State<DiabetesAnalysisWidget> {
         ),
       ),
     );
-  }
-
-  Color _getModelColor(int index) {
-    final colors = [
-      Colors.blue,
-      Colors.green,
-      Colors.red,
-      Colors.orange,
-      Colors.purple,
-      Colors.teal,
-    ];
-    return colors[index % colors.length];
   }
 }
