@@ -127,12 +127,42 @@ class DiabetesRiskPredictionDataModel extends DataModel {
   @override
   List<String> getNumericFields() => [
         'age',
+        'polyuria',
+        'polydipsia',
+        'suddenWeightLoss',
+        'weakness',
+        'polyphagia',
+        'genitalThrush',
+        'visualBlurring',
+        'itching',
+        'irritability',
+        'delayedHealing',
+        'partialParesis',
+        'muscleStiffness',
+        'alopecia',
+        'obesity',
+        'result',
       ];
 
   @override
   double? getNumericValue(String field) {
     switch (field) {
       case 'age': return age.toDouble();
+      case 'polyuria': return _convertToBinary(polyuria);
+      case 'polydipsia': return _convertToBinary(polydipsia);
+      case 'suddenWeightLoss': return _convertToBinary(suddenWeightLoss);
+      case 'weakness': return _convertToBinary(weakness);
+      case 'polyphagia': return _convertToBinary(polyphagia);
+      case 'genitalThrush': return _convertToBinary(genitalThrush);
+      case 'visualBlurring': return _convertToBinary(visualBlurring);
+      case 'itching': return _convertToBinary(itching);
+      case 'irritability': return _convertToBinary(irritability);
+      case 'delayedHealing': return _convertToBinary(delayedHealing);
+      case 'partialParesis': return _convertToBinary(partialParesis);
+      case 'muscleStiffness': return _convertToBinary(muscleStiffness);
+      case 'alopecia': return _convertToBinary(alopecia);
+      case 'obesity': return _convertToBinary(obesity);
+      case 'result': return _convertToBinary(result);
       default: return null;
     }
   }
