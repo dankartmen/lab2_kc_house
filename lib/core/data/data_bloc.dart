@@ -6,6 +6,7 @@ import '../analysis/data_analyzer.dart';
 import 'data_event.dart';
 import 'data_model.dart';
 import 'data_state.dart';
+import 'field_descriptor.dart';
 
 /// {@template generic_bloc}
 /// Базовый BLoC для работы с данными любого типа.
@@ -23,38 +24,18 @@ abstract class GenericBloc<T extends DataModel> extends Bloc<DataEvent, DataStat
   }
 
   /// Обработчик события загрузки данных.
-  /// 
-  /// Принимает:
-  /// - [event] - событие загрузки данных,
-  /// - [emit] - функция для emitting новых состояний.
-  /// 
-  /// Выполняет:
-  /// - Загрузку данных из источника,
-  /// - Первичный анализ данных,
-  /// - Вычисление корреляций.
   Future<void> _onLoadData(LoadDataEvent event, Emitter<DataState> emit) async {
     emit(DataLoading());
     try {
       final data = await dataSource.loadData();
       await _performInitialAnalysis(data, emit);
     } catch (e) {
-      // В случае ошибки сети или парсинга данных
       emit(DataError('Ошибка загрузки данных: $e'));
     }
   }
 
   /// Выполняет первичный анализ загруженных данных.
-  /// 
-  /// Принимает:
-  /// - [data] - загруженные данные для анализа,
-  /// - [emit] - функция для emitting новых состояний.
-  /// 
-  /// Выполняет:
-  /// - Статистический анализ данных,
-  /// - Вычисление матрицы корреляции,
-  /// - Формирование метаданных.
   Future<void> _performInitialAnalysis(List<T> data, Emitter<DataState> emit) async {
-    // Автоматический анализ при загрузке
     DataAnalyzer.printHead(data);
     DataAnalyzer.countEmptyValues(data);
     DataAnalyzer.describe(data);
@@ -76,23 +57,15 @@ abstract class GenericBloc<T extends DataModel> extends Bloc<DataEvent, DataStat
   }
 
   /// Обработчик события дополнительного анализа данных.
-  /// 
-  /// Принимает:
-  /// - [event] - событие анализа с указанием полей,
-  /// - [emit] - функция для emitting новых состояний.
-  /// 
-  /// Выполняет:
-  /// - Пересчет корреляций для указанных полей,
-  /// - Обновление состояния с новыми результатами анализа.
   Future<void> _onAnalyzeData(AnalyzeDataEvent event, Emitter<DataState> emit) async {
     final currentState = state;
     if (currentState is DataLoaded<T>) {
       final fieldsToAnalyze = event.fields.isNotEmpty ? event.fields : currentState.numericFields;
       final correlationMatrix = CorrelationCalculator.calculateMatrix(
         currentState.data, 
-        fieldsToAnalyze
+        fieldsToAnalyze as List<String>,
       );
-      
+
       emit(currentState.copyWith(
         correlationMatrix: correlationMatrix,
         metadata: {
@@ -104,7 +77,7 @@ abstract class GenericBloc<T extends DataModel> extends Bloc<DataEvent, DataStat
     }
   }
 
-   /// Обработчик события загрузки анализа
+  /// Обработчик события загрузки внешнего анализа.
   Future<void> _onLoadAnalysis(LoadAnalysisEvent event, Emitter<DataState> emit) async {
     final currentState = state;
     if (currentState is DataLoaded<T>) {
@@ -113,14 +86,12 @@ abstract class GenericBloc<T extends DataModel> extends Bloc<DataEvent, DataStat
         emit(currentState.copyWith(
           metadata: {
             ...currentState.metadata,
-            'heart_attack_analysis': analysisData,
+            'externalAnalysis': analysisData,
             'analysisLoadedAt': DateTime.now(),
           },
         ));
       } catch (e) {
-        // Не прерываем основное состояние, просто логируем ошибку
         debugPrint('Error loading analysis: $e');
-        // Можно добавить уведомление об ошибке в метаданные
         emit(currentState.copyWith(
           metadata: {
             ...currentState.metadata,
@@ -130,23 +101,14 @@ abstract class GenericBloc<T extends DataModel> extends Bloc<DataEvent, DataStat
       }
     }
   }
-  
-  /// Извлекает числовые поля из данных.
-  /// 
-  /// Принимает:
-  /// - [data] - данные для анализа.
-  /// 
-  /// Возвращает:
-  /// - [List<String>] список имен числовых полей.
-  /// 
-  /// Если данные пусты, возвращает пустой список.
-  List<String> _extractNumericFields(List<T> data) {
+
+  /// Извлекает числовые поля из данных через FieldDescriptor.
+  List<FieldDescriptor> _extractNumericFields(List<T> data) {
     if (data.isEmpty) return [];
-    return data.first.getNumericFields();
+    return data.first.getNumericFieldsDescriptors();
   }
 
-  /// Загружает дополнительные аналитические данные
-  /// Переопределяется в конкретных реализациях BLoC
+  /// Загружает дополнительные аналитические данные.
   Future<Map<String, dynamic>> loadAnalysisData() async {
     return {};
   }

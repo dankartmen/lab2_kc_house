@@ -1,8 +1,11 @@
 import '../../../core/data/data_model.dart';
+import '../../../core/data/field_descriptor.dart';
 
 /// {@template diabetes_risk_prediction_data_model}
-/// Модель данных о признаках и симптомах людей, которые либо проявляют 
-/// ранние признаки диабета, либо подвержены риску развития диабета.
+/// Модель данных для анализа риска развития диабета.
+///
+/// Содержит демографические признаки и бинарные симптомы,
+/// а также итоговый диагноз.
 /// {@endtemplate}
 class DiabetesRiskPredictionDataModel extends DataModel {
   /// Возраст.
@@ -77,27 +80,86 @@ class DiabetesRiskPredictionDataModel extends DataModel {
     required this.result,
   });
 
-  /// Создаёт модель из CSV-строки (row из CsvToListConverter).
-  factory DiabetesRiskPredictionDataModel.fromCsv(List<dynamic> row) {
-    return DiabetesRiskPredictionDataModel(
-      age: int.tryParse(row[0].toString()) ?? 0,
-      gender: row[1].toString().trim(),
-      polyuria: row[2].toString().trim(),
-      polydipsia: row[3].toString().trim(),
-      suddenWeightLoss: row[4].toString().trim(),
-      weakness: row[5].toString().trim(),
-      polyphagia: row[6].toString().trim(),
-      genitalThrush: row[7].toString().trim(),
-      visualBlurring: row[8].toString().trim(),
-      itching: row[9].toString().trim(),
-      irritability: row[10].toString().trim(),
-      delayedHealing: row[11].toString().trim(),
-      partialParesis: row[12].toString().trim(),
-      muscleStiffness: row[13].toString().trim(),
-      alopecia: row[14].toString().trim(),
-      obesity: row[15].toString().trim(),
-      result: row[16].toString().trim(),
-    );
+  @override
+  List<FieldDescriptor> get fieldDescriptors => const [
+        FieldDescriptor(
+          key: 'age',
+          label: 'Возраст',
+          type: FieldType.continuous,
+          min: 0,
+          max: 120,
+        ),
+        FieldDescriptor(
+          key: 'polyuria',
+          label: 'Полиурия',
+          type: FieldType.binary,
+        ),
+        FieldDescriptor(
+          key: 'polydipsia',
+          label: 'Полидипсия',
+          type: FieldType.binary,
+        ),
+        FieldDescriptor(
+          key: 'obesity',
+          label: 'Ожирение',
+          type: FieldType.binary,
+        ),
+        FieldDescriptor(
+          key: 'result',
+          label: 'Диагноз',
+          type: FieldType.categorical,
+        ),
+      ];
+
+  @override
+  List<FieldDescriptor> getNumericFieldsDescriptors() {
+    return [
+      FieldDescriptor.numeric('age', label: 'Возраст'),
+      FieldDescriptor.binary('polyuria', label: 'Полиурия'),
+      FieldDescriptor.binary('polydipsia', label: 'Полидипсия'),
+      FieldDescriptor.binary('suddenWeightLoss', label: 'Внезапная потеря веса'),
+      FieldDescriptor.binary('weakness', label: 'Слабость'),
+      FieldDescriptor.binary('polyphagia', label: 'Полифагия'),
+      FieldDescriptor.binary('genitalThrush', label: 'Молочница'),
+      FieldDescriptor.binary('visualBlurring', label: 'Нечеткое зрение'),
+      FieldDescriptor.binary('itching', label: 'Зуд'),
+      FieldDescriptor.binary('irritability', label: 'Раздражительность'),
+      FieldDescriptor.binary('delayedHealing', label: 'Замедленное заживление'),
+      FieldDescriptor.binary('partialParesis', label: 'Частичный паралич'),
+      FieldDescriptor.binary('muscleStiffness', label: 'Мышечная скованность'),
+      FieldDescriptor.binary('alopecia', label: 'Алопеция'),
+      FieldDescriptor.binary('obesity', label: 'Ожирение'),
+      FieldDescriptor.binary('result', label: 'Результат'),
+    ];
+  }
+
+
+  @override
+  double? getNumericValue(String key) {
+    switch (key) {
+      case 'age':
+        return age.toDouble();
+      case 'polyuria':
+        return _yesNo(polyuria);
+      case 'polydipsia':
+        return _yesNo(polydipsia);
+      case 'obesity':
+        return _yesNo(obesity);
+      default:
+        return null;
+    }
+  }
+
+  @override
+  String? getCategoricalValue(String key) {
+    switch (key) {
+      case 'gender':
+        return gender;
+      case 'result':
+        return result;
+      default:
+        return null;
+    }
   }
 
   @override
@@ -106,114 +168,17 @@ class DiabetesRiskPredictionDataModel extends DataModel {
         'gender': gender,
         'polyuria': polyuria,
         'polydipsia': polydipsia,
-        'suddenWeightLoss': suddenWeightLoss,
-        'weakness': weakness,
-        'polyphagia': polyphagia,
-        'genitalThrush': genitalThrush,
-        'visualBlurring': visualBlurring,
-        'itching': itching,
-        'irritability': irritability,
-        'delayedHealing': delayedHealing,
-        'partialParesis': partialParesis,
-        'muscleStiffness': muscleStiffness,
-        'alopecia': alopecia,
         'obesity': obesity,
         'result': result,
       };
 
   @override
-  String getDisplayName() => 'Age: $age, Result: $result';
+  String getDisplayName() => 'Возраст: $age, Диагноз: $result';
 
-  @override
-  List<String> getNumericFields() => [
-        'age',
-        'polyuria',
-        'polydipsia',
-        'suddenWeightLoss',
-        'weakness',
-        'polyphagia',
-        'genitalThrush',
-        'visualBlurring',
-        'itching',
-        'irritability',
-        'delayedHealing',
-        'partialParesis',
-        'muscleStiffness',
-        'alopecia',
-        'obesity',
-        'result',
-      ];
-
-  @override
-  double? getNumericValue(String field) {
-    switch (field) {
-      case 'age': return age.toDouble();
-      case 'polyuria': return _convertToBinary(polyuria);
-      case 'polydipsia': return _convertToBinary(polydipsia);
-      case 'suddenWeightLoss': return _convertToBinary(suddenWeightLoss);
-      case 'weakness': return _convertToBinary(weakness);
-      case 'polyphagia': return _convertToBinary(polyphagia);
-      case 'genitalThrush': return _convertToBinary(genitalThrush);
-      case 'visualBlurring': return _convertToBinary(visualBlurring);
-      case 'itching': return _convertToBinary(itching);
-      case 'irritability': return _convertToBinary(irritability);
-      case 'delayedHealing': return _convertToBinary(delayedHealing);
-      case 'partialParesis': return _convertToBinary(partialParesis);
-      case 'muscleStiffness': return _convertToBinary(muscleStiffness);
-      case 'alopecia': return _convertToBinary(alopecia);
-      case 'obesity': return _convertToBinary(obesity);
-      case 'result': return _convertToBinary(result);
-      default: return null;
-    }
-  }
-
-  /// Конвертирует строковые Yes/No значения в числовые (1.0/0.0)
-  double? getBinaryValue(String field) {
-    switch (field) {
-      case 'polyuria': return _convertToBinary(polyuria);
-      case 'polydipsia': return _convertToBinary(polydipsia);
-      case 'suddenWeightLoss': return _convertToBinary(suddenWeightLoss);
-      case 'weakness': return _convertToBinary(weakness);
-      case 'polyphagia': return _convertToBinary(polyphagia);
-      case 'genitalThrush': return _convertToBinary(genitalThrush);
-      case 'visualBlurring': return _convertToBinary(visualBlurring);
-      case 'itching': return _convertToBinary(itching);
-      case 'irritability': return _convertToBinary(irritability);
-      case 'delayedHealing': return _convertToBinary(delayedHealing);
-      case 'partialParesis': return _convertToBinary(partialParesis);
-      case 'muscleStiffness': return _convertToBinary(muscleStiffness);
-      case 'alopecia': return _convertToBinary(alopecia);
-      case 'obesity': return _convertToBinary(obesity);
-      case 'result': return _convertToBinary(result);
-      default: return null;
-    }
-  }
-
-  double _convertToBinary(String value) {
-    if (value.toLowerCase() == 'yes' || value.toLowerCase() == 'positive') {
-      return 1.0;
-    } else if (value.toLowerCase() == 'no' || value.toLowerCase() == 'negative') {
-      return 0.0;
-    }
+  double _yesNo(String value) {
+    final v = value.toLowerCase();
+    if (v == 'yes' || v == 'positive') return 1.0;
+    if (v == 'no' || v == 'negative') return 0.0;
     return 0.0;
   }
-
-  /// Список всех бинарных полей
-  List<String> getBinaryFields() => [
-    'polyuria',
-    'polydipsia',
-    'suddenWeightLoss',
-    'weakness',
-    'polyphagia',
-    'genitalThrush',
-    'visualBlurring',
-    'itching',
-    'irritability',
-    'delayedHealing',
-    'partialParesis',
-    'muscleStiffness',
-    'alopecia',
-    'obesity',
-    'result',
-  ];
 }

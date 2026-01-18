@@ -1,68 +1,41 @@
 import '../../core/data/data_model.dart';
+import '../../core/data/field_descriptor.dart';
 
+/// {@template pair_plot_config}
+/// Базовая конфигурация для парных диаграмм (Pair Plot).
+///
+/// Определяет:
+/// - какие поля отображаются
+/// - какое поле используется для группировки (hue)
+/// - цветовую палитру
+/// {@endtemplate}
 abstract class PairPlotConfig<T extends DataModel> {
-  List<String> get numericFields;
-  String? get hueField; // Для цветовой группировки
-  ColorPalette? get palette; // Цветовая палитра для групп
+  /// {@macro pair_plot_config}
+  const PairPlotConfig();
+
+  /// Поля, используемые для построения матрицы диаграмм.
+  List<FieldDescriptor> get fields;
+
+  /// Поле, используемое для цветовой группировки.
+  ///
+  /// Должно иметь тип [FieldType.categorical].
+  FieldDescriptor? get hue;
+
+  /// Цветовая палитра для группировки.
+  ColorPalette? get palette;
 }
 
-class PairPlotFeature {
-  final String field;
-  final String title;
-  final String? displayFormat;
-
-  const PairPlotFeature({
-    required this.field,
-    required this.title,
-    this.displayFormat,
-  });
-}
-
-// Цветовые палитры для группировки
+/// Цветовые палитры для визуализации.
 enum ColorPalette {
-  defaultPalette, // синяя шкала
-  categorical, // для категориальных данных
-  sequential, // для последовательных данных
-  diverging, // для расходящихся данных
-}
+  /// Палитра по умолчанию.
+  defaultPalette,
 
-// Конфигурация стилей для парных диаграмм
-class PairPlotStyle {
-  final double dotSize;
-  final double alpha;
-  final bool showHistDiagonal;
-  final bool showKdeDiagonal;
-  final bool showCorrelation;
-  final int maxPoints;
-  final bool simplified;
+  /// Категориальная палитра.
+  categorical,
 
-  const PairPlotStyle({
-    this.dotSize = 2.0,
-    this.alpha = 0.6,
-    this.showHistDiagonal = true,
-    this.showKdeDiagonal = false,
-    this.showCorrelation = true,
-    this.maxPoints = 500,
-    this.simplified = false,
-  });
+  /// Последовательная палитра.
+  sequential,
 
-  PairPlotStyle copyWith({
-    double? dotSize,
-    double? alpha,
-    bool? showHistDiagonal,
-    bool? showKdeDiagonal,
-    bool? showCorrelation,
-    int? maxPoints,
-    bool? simplified,
-  }) {
-    return PairPlotStyle(
-      dotSize: dotSize ?? this.dotSize,
-      alpha: alpha ?? this.alpha,
-      showHistDiagonal: showHistDiagonal ?? this.showHistDiagonal,
-      showKdeDiagonal: showKdeDiagonal ?? this.showKdeDiagonal,
-      showCorrelation: showCorrelation ?? this.showCorrelation,
-      maxPoints: maxPoints ?? this.maxPoints,
-      simplified: simplified ?? this.simplified,
-    );
-  }
+  /// Расходящаяся палитра.
+  diverging,
 }

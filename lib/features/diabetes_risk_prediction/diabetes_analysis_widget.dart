@@ -30,7 +30,7 @@ class _DiabetesAnalysisWidgetState extends State<DiabetesAnalysisWidget> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://127.0.0.1:8000/api/diabetes-analysis'),
+        Uri.parse('http://0.0.0.0:8000/api/diabetes-analysis'),
       );
 
       if (response.statusCode == 200) {
@@ -923,19 +923,18 @@ class _DiabetesAnalysisWidgetState extends State<DiabetesAnalysisWidget> {
       'Polydipsia': 'Полидипсия',
       'sudden weight loss': 'Внезапная потеря веса',
       'weakness': 'Слабость',
-      'Polyphagia': 'Полифагия',
+      'Polyphagia': 'Полифагия (повышенный аппетит)',
       'Genital thrush': 'Молочница',
       'visual blurring': 'Нечеткое зрение',
       'Itching': 'Зуд',
       'Irritability': 'Раздражительность',
-      'delayed healing': 'Замедленное заживление',
+      'delayed healing': 'Замедленное заживление ран',
       'partial paresis': 'Частичный паралич',
       'muscle stiffness': 'Мышечная скованность',
-      'Alopecia': 'Алопеция',
+      'Alopecia': 'Алопеция (выпадение волос)',
       'Obesity': 'Ожирение',
       'Age': 'Возраст',
-      'Gender': 'Пол',
-      'sex': 'Пол'
+      'Gender': 'Пол'
     };
     
     return descriptions[feature] ?? feature;
