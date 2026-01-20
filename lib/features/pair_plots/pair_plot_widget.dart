@@ -84,6 +84,8 @@ class PairPlot<T extends DataModel> extends StatelessWidget {
   Widget _buildMatrix(List<FieldDescriptor> fields) {
     final n = fields.length;
 
+    // Строит матрицу графиков размером n×n, где n - количество числовых полей
+    // На диагонали - гистограммы, вне диагонали - диаграммы рассеяния
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),

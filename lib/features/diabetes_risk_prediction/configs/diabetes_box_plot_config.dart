@@ -6,6 +6,7 @@ class DiabetesBoxPlotConfig extends BoxPlotConfig<DiabetesRiskPredictionDataMode
   @override
   List<BoxPlotFeature> get features => [
         BoxPlotFeature('Возраст', 'age', groupBy: 'result', divisor: 1.0),
+        BoxPlotFeature('Пол', 'gender', groupBy: 'result', divisor: 1.0),
         BoxPlotFeature('Полиурия', 'polyuria', groupBy: 'result', divisor: 1.0),
         BoxPlotFeature('Полидипсия', 'polydipsia', groupBy: 'result', divisor: 1.0),
         BoxPlotFeature('Внезапная потеря веса', 'suddenWeightLoss', groupBy: 'result', divisor: 1.0),

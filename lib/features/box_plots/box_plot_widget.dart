@@ -509,12 +509,12 @@ class _BoxPlotPainter extends CustomPainter {
     Paint paint, 
     List<double> dashPattern,
   ) {
-    final distance = (end - start).distance;
+    final distance = (end - start).distance; // Длина линии
     final dir = (end - start) / distance;
     
     double drawn = 0.0;
-    bool draw = true;
-    int patternIndex = 0;
+    bool draw = true; // Флаг: рисовать отрезок или пропускать
+    int patternIndex = 0;  // Индекс в паттерне [длина_штриха, длина_пропуска]
     
     while (drawn < distance) {
       final patternLength = dashPattern[patternIndex % dashPattern.length];
@@ -525,14 +525,15 @@ class _BoxPlotPainter extends CustomPainter {
         canvas.drawLine(start + dir * drawn, segmentEnd, paint);
       }
       
-      drawn += patternLength;
-      draw = !draw;
-      patternIndex++;
+      drawn += patternLength; // Перемещаем позицию рисования
+      draw = !draw; // Переключаем режим: штрих/пропуск
+      patternIndex++; // Переходим к следующему элементу
     }
   }
 
   /// Находит нижнюю границу уса (минимальное значение, не являющееся выбросом)
   double _getWhiskerLower(List<double> values, double lowerBound) {
+    // Фильтруем значения, которые больше или равны границе выбросов
     final nonOutliers = values.where((v) => v >= lowerBound).toList();
     return nonOutliers.isNotEmpty ? nonOutliers.reduce((a, b) => a < b ? a : b) : 
            values.reduce((a, b) => a < b ? a : b); // Если все значения - выбросы, берем абсолютный минимум

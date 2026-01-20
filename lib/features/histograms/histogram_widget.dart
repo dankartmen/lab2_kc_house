@@ -75,7 +75,7 @@ class UniversalHistograms<T extends DataModel> extends StatelessWidget {
     final sortedEntries = uniqueValues.entries.toList()
       ..sort((a, b) => a.key.compareTo(b.key));
     
-    // Выводим ВСЕ значения
+    // Выводим все значения
     for (final entry in sortedEntries) {
       final valueStr = entry.key.toString(); // Без форматирования
       final unitStr = feature.unit.isNotEmpty ? ' ${feature.unit}' : '';
@@ -227,20 +227,21 @@ class UniversalHistograms<T extends DataModel> extends StatelessWidget {
                         show: true,
                         border: Border.all(color: Colors.grey[400]!, width: 1),
                       ),
+                      // Настройка всплывающих подсказок при наведении на столбцы гистограммы
                       barTouchData: BarTouchData(
                         enabled: true,
                         touchTooltipData: BarTouchTooltipData(
                           getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                            final count = rod.toY.toInt();
-                            final start = binBoundaries[groupIndex];
-                            final end = binBoundaries[groupIndex + 1] - 1;
+                            final count = rod.toY.toInt(); // Количество значений в бине
+                            final start = binBoundaries[groupIndex]; // Начальная граница бина
+                            final end = binBoundaries[groupIndex + 1] - 1; // Конечная граница бина
                             
                             return BarTooltipItem(
                               values.length == feature.binCount 
-                              ? start.toStringAsFixed(0) 
-                              : '${start.toStringAsFixed(0)}–${end.toStringAsFixed(0)} ${feature.unit}\n'
+                              ? start.toStringAsFixed(0)  // Если каждый бин содержит одно значение
+                              : '${start.toStringAsFixed(0)}–${end.toStringAsFixed(0)} ${feature.unit}\n' // Диапазон бина
                               'Количество: $count\n'
-                              '(${(count / values.length * 100).toStringAsFixed(1)}%)',
+                              '(${(count / values.length * 100).toStringAsFixed(1)}%)', // Процент от общего количества
                               const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -399,12 +400,13 @@ class UniversalHistograms<T extends DataModel> extends StatelessWidget {
     if (minVal == maxVal) {
       return [minVal, maxVal + 0.001]; // Маленькая дельта для создания бина
     }
-    
+
     final range = maxVal - minVal;
     final binWidth = range / binCount;
     
     // Создаем границы на основе реальных данных
     final boundaries = <double>[];
+    
     for (int i = 0; i <= binCount; i++) {
       boundaries.add(minVal + i * binWidth);
     }

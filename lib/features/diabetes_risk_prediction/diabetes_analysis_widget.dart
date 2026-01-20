@@ -719,7 +719,7 @@ class _DiabetesAnalysisWidgetState extends State<DiabetesAnalysisWidget> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Кросс-валидация (5 фолдов)',
+              'Кросс-валидация',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
