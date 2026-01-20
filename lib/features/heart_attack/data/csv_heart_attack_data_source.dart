@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/services.dart';
 import 'package:csv/csv.dart';
 
@@ -20,10 +22,20 @@ class CsvHeartAttackDataSource implements DataSource<HeartAttackDataModel> {
       // Парсинг CSV данных
       final csvData = const CsvToListConverter().convert(csvString, eol: '\n');
 
-      // Пропускаем заголовок и преобразуем строки в HeartAttackDataModel
-      final heartData = csvData.skip(1).map((row) => HeartAttackDataModel.fromCsv(row)).toList();
-      
-      return heartData;
+      final headers = csvData.first.map((e) => e.toString()).toList();
+      log(headers.toString());
+      return csvData.skip(1).map((row) {
+        final map = <String, dynamic>{};
+        for (int i = 0; i < headers.length && i < row.length; i++) {
+          final key = headers[i];
+          final value = row[i];
+
+          // log('Parsing: key=$key, value=$value, type=${value?.runtimeType}', name: 'CSV');
+
+          map[key] = value;
+        }
+        return HeartAttackDataModel.fromMap(map);
+      }).toList();
     } catch (e) {
       throw Exception('Ошибка загрузки данных о рисках сердечных приступов: $e');
     }

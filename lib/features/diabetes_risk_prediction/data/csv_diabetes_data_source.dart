@@ -23,10 +23,12 @@ class CsvDiabetesDataSource implements DataSource<DiabetesRiskPredictionDataMode
         eol: '\n',
       ).convert(csvString);
 
-      // Пропускаем заголовок и преобразуем строки в DiabetesRiskPredictionDataModel
-      final diabetesData = csvData.skip(1).map((row) => DiabetesRiskPredictionDataModel.fromCsv(row)).toList();
-      
-      return diabetesData;
+      final headers = csvData.first.map((e) => e.toString()).toList();
+
+      return csvData.skip(1).map((row) {
+        final map = Map<String, dynamic>.fromIterables(headers, row);
+        return DiabetesRiskPredictionDataModel.fromMap(map);
+      }).toList();
     } catch (e) {
       throw Exception('Ошибка загрузки данных о рисках диабета: $e');
     }

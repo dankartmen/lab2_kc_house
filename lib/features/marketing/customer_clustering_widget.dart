@@ -12,10 +12,10 @@ class CustomerClusteringWidget extends StatefulWidget {
   const CustomerClusteringWidget({super.key, required this.apiUrl});
 
   @override
-  _CustomerClusteringWidgetState createState() => _CustomerClusteringWidgetState();
+  CustomerClusteringWidgetState createState() => CustomerClusteringWidgetState();
 }
 
-class _CustomerClusteringWidgetState extends State<CustomerClusteringWidget> {
+class CustomerClusteringWidgetState extends State<CustomerClusteringWidget> {
   Map<String, dynamic>? _clusteringData;
   bool _isLoading = false;
   String _error = '';
@@ -741,13 +741,13 @@ class _CustomerClusteringWidgetState extends State<CustomerClusteringWidget> {
                     getDrawingHorizontalLine:(value) {
                       if (value == 0.2 || value == 0.4 || value == 0.6 || value == 0.8) {
                         return FlLine(
-                          color: Colors.grey.withOpacity(0.5),
+                          color: Colors.grey.withValues(alpha: 0.5),
                           strokeWidth: 1,
                           dashArray: [5, 5],
                         );
                       }
                       return FlLine(
-                        color: Colors.grey.withOpacity(0.2),
+                        color: Colors.grey.withValues(alpha: 0.2),
                         strokeWidth: 1,
                       );
                     },
@@ -793,9 +793,9 @@ Widget _buildScoreIndicator(String label, Color color, double min, double max) {
     child: Container(
       padding: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: color.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withOpacity(0.5)),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Column(
         children: [

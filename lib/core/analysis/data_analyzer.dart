@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../data/data_model.dart';
+import '../data/field_descriptor.dart';
 import 'statistics_calculator.dart';
 
 /// {@template data_analyzer}
@@ -35,7 +36,9 @@ class DataAnalyzer {
 
     final counters = <String, int>{};
     final firstItem = data.first.toJson();
-    for (var key in firstItem.keys) counters[key] = 0;
+    for (var key in firstItem.keys) {
+      counters[key] = 0;
+    }
 
     for (var item in data) {
       final json = item.toJson();
@@ -64,19 +67,26 @@ class DataAnalyzer {
 
   /// Статистический анализ числовых полей.
   static void describe<T extends DataModel>(List<T> data) {
-    final numericFields = data.isNotEmpty
-    ? data.first.getNumericFieldsDescriptors().map((f) => f.key).toList()
-    : [];
+    if (data.isEmpty) {
+      debugPrint('Данные пусты — анализ невозможен');
+      return;
+    }
 
-    if (numericFields.isEmpty) {
+    // Получаем дескрипторы числовых полей из первого элемента
+    final numericDescriptors = data.first.fieldDescriptors
+        .where((descriptor) => 
+            descriptor.type == FieldType.continuous || descriptor.type == FieldType.binary)
+        .toList();
+
+    if (numericDescriptors.isEmpty) {
       debugPrint('В данных нет числовых полей для анализа');
       return;
     }
 
     final fieldStats = <String, DescriptiveStats>{};
-    for (var field in numericFields) {
-      final stats = _calculateFieldStats(data, field);
-      if (stats != null) fieldStats[field] = stats;
+    for (var descriptor in numericDescriptors) {
+      final stats = _calculateFieldStats(data, descriptor.key);
+      if (stats != null) fieldStats[descriptor.key] = stats;
     }
 
     if (fieldStats.isEmpty) {

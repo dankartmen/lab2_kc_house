@@ -1,3 +1,7 @@
+import 'dart:developer';
+
+import 'package:lab2_kc_house/core/data/field_descriptor.dart';
+
 import '../../../core/data/data_model.dart';
 
 /// {@template heart_attack_data_model}
@@ -112,40 +116,37 @@ class HeartAttackDataModel extends DataModel {
     required this.heartAttackRisk,
   });
 
-  /// Создаёт модель из CSV-строки (row из CsvToListConverter).
-  factory HeartAttackDataModel.fromCsv(List<dynamic> row) {
-    return HeartAttackDataModel(
-      patientId: row[0].toString(),
-      age: int.tryParse(row[1].toString()) ?? 0,
-      sex: row[2].toString(),
-      cholesterol: double.tryParse(row[3].toString()) ?? 0.0,
-      bloodPressure: row[4].toString(),
-      heartRate: int.tryParse(row[5].toString()) ?? 0,
-      diabetes: int.tryParse(row[6].toString()) ?? 0,
-      familyHistory: int.tryParse(row[7].toString()) ?? 0,
-      smoking: int.tryParse(row[8].toString()) ?? 0,
-      obesity: int.tryParse(row[9].toString()) ?? 0,
-      alcoholConsumption: int.tryParse(row[10].toString()) ?? 0,
-      exerciseHoursPerWeek: double.tryParse(row[11].toString()) ?? 0.0,
-      diet: row[12].toString(),
-      previousHeartProblems: int.tryParse(row[13].toString()) ?? 0,
-      medicationUse: int.tryParse(row[14].toString()) ?? 0,
-      stressLevel: int.tryParse(row[15].toString()) ?? 0,
-      sedentaryHoursPerDay: double.tryParse(row[16].toString()) ?? 0.0,
-      income: double.tryParse(row[17].toString()) ?? 0.0,
-      bmi: double.tryParse(row[18].toString()) ?? 0.0,
-      triglycerides: double.tryParse(row[19].toString()) ?? 0.0,
-      physicalActivityDaysPerWeek: int.tryParse(row[20].toString()) ?? 0,
-      sleepHoursPerDay: double.tryParse(row[21].toString()) ?? 0.0,
-      country: row[22].toString(),
-      continent: row[23].toString(),
-      hemisphere: row[24].toString(),
-      heartAttackRisk: int.tryParse(row[25].toString()) ?? 0,
-    );
-  }
-
   @override
-  Map<String, dynamic> toJson() => {
+  HeartAttackDataModel.fromMap(Map<String, dynamic> map)
+      : patientId = map['Patient ID'] ?? '',
+        age = _parseInt(map['Age']),
+        sex = map['Sex']?.toString() ?? '',
+        cholesterol = _parseDouble(map['Cholesterol']),
+        bloodPressure = map['Blood Pressure']?.toString() ?? '',
+        heartRate = _parseInt(map['Heart Rate']),
+        diabetes = _parseInt(map['Diabetes']),
+        familyHistory = _parseInt(map['Family History']),
+        smoking = _parseInt(map['Smoking']),
+        obesity = _parseInt(map['Obesity']),
+        alcoholConsumption = _parseInt(map['Alcohol Consumption']),
+        exerciseHoursPerWeek = _parseDouble(map['Exercise Hours Per Week']),
+        diet = map['Diet']?.toString() ?? '',
+        previousHeartProblems = _parseInt(map['Previous Heart Problems']),
+        medicationUse = _parseInt(map['Medication Use']),
+        stressLevel = _parseInt(map['Stress Level']),
+        sedentaryHoursPerDay = _parseDouble(map['Sedentary Hours Per Day']),
+        income = _parseDouble(map['Income']),
+        bmi = _parseDouble(map['BMI']),
+        triglycerides = _parseDouble(map['Triglycerides']),
+        physicalActivityDaysPerWeek = _parseInt(map['Physical Activity Days Per Week']),
+        sleepHoursPerDay = _parseDouble(map['Sleep Hours Per Day']),
+        country = map['Country']?.toString() ?? '',
+        continent = map['Continent']?.toString() ?? '',
+        hemisphere = map['Hemisphere']?.toString() ?? '',
+        heartAttackRisk = _parseInt(map['Heart Attack Risk']);
+
+      @override
+      Map<String, dynamic> toJson() => {
         'patientId': patientId,
         'age': age,
         'sex': sex,
@@ -177,21 +178,7 @@ class HeartAttackDataModel extends DataModel {
   @override
   String getDisplayName() => 'Patient $patientId (Age: $age, Risk: $heartAttackRisk)';
 
-  @override
-  List<String> getNumericFields() => [
-        'age',
-        'cholesterol',
-        'heartRate',
-        'exerciseHoursPerWeek',
-        'stressLevel',
-        'sedentaryHoursPerDay',
-        'income',
-        'bmi',
-        'triglycerides',
-        'physicalActivityDaysPerWeek',
-        'sleepHoursPerDay',
-        'heartAttackRisk',
-      ];
+  
 
   @override
   double? getNumericValue(String field) {
@@ -211,4 +198,81 @@ class HeartAttackDataModel extends DataModel {
       default: return null;
     }
   }
+
+  @override
+  List<FieldDescriptor> get fieldDescriptors => [
+        FieldDescriptor(
+          key: 'age',
+          label: 'Возраст',
+          type: FieldType.continuous,
+        ),
+        FieldDescriptor(
+          key: 'cholesterol',
+          label: 'Холестерин',
+          type: FieldType.continuous,
+        ),
+        FieldDescriptor(
+          key: 'bmi',
+          label: 'ИМТ',
+          type: FieldType.continuous,
+        ),
+        FieldDescriptor(
+          key: 'heartRate',
+          label: 'ЧСС',
+          type: FieldType.continuous,
+        ),
+        FieldDescriptor(
+          key: 'stressLevel',
+          label: 'Уровень стресса',
+          type: FieldType.continuous,
+        ),
+        FieldDescriptor(
+          key: 'triglycerides',
+          label: 'Триглицериды',
+          type: FieldType.continuous,
+        ),
+        FieldDescriptor(
+          key: 'heartAttackRisk',
+          label: 'Риск сердечного приступа',
+          type: FieldType.categorical,
+        ),
+      ];
+
+  @override
+  String? getCategoricalValue(String key) {
+    switch (key) {
+      case 'heartAttackRisk': return heartAttackRisk.toString();
+      case 'sex': return sex;
+      case 'diet': return diet;
+      case 'country': return country;
+      case 'continent': return continent;
+      case 'hemisphere': return hemisphere;
+      default: return null;
+    }
+  }
+
+  static int _parseInt(dynamic value) {
+    // log( value.toString(), name: 'Parsing Int');
+  if (value == null) return 0;
+  if (value is int) return value;
+  if (value is double) return value.toInt();
+  if (value is String) {
+    final parsed = int.tryParse(value);
+    // log(parsed.toString(), name: 'Parsing Int');
+    return parsed ?? 0;
+  }
+  return 0;
+}
+
+static double _parseDouble(dynamic value) {
+  // log( value.toString(), name: 'Parsing Double');
+  if (value == null) return 0.0;
+  if (value is double) return value;
+  if (value is int) return value.toDouble();
+  if (value is String) {
+    final parsed = double.tryParse(value);
+    return parsed ?? 0.0;
+  }
+  return 0.0;
+}
 }

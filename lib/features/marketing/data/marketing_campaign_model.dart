@@ -1,4 +1,6 @@
 
+import 'package:lab2_kc_house/core/data/field_descriptor.dart';
+
 import '../../../core/data/data_model.dart';
 
 /// {@template marketing_campaign_data_model}
@@ -125,40 +127,36 @@ class MarketingCampaignDataModel extends DataModel {
     required this.response,
   });
 
-  /// Создаёт модель из CSV-строки.
-  factory MarketingCampaignDataModel.fromCsv(List<dynamic> row) {
-    return MarketingCampaignDataModel(
-      id: row[0].toString(),
-      yearBirth: int.tryParse(row[1].toString()) ?? 0,
-      education: row[2].toString(),
-      maritalStatus: row[3].toString(),
-      income: double.tryParse(row[4].toString()) ?? 0.0,
-      kidhome: int.tryParse(row[5].toString()) ?? 0,
-      teenhome: int.tryParse(row[6].toString()) ?? 0,
-      dtCustomer: row[7].toString(),
-      recency: int.tryParse(row[8].toString()) ?? 0,
-      mntWines: double.tryParse(row[9].toString()) ?? 0.0,
-      mntFruits: double.tryParse(row[10].toString()) ?? 0.0,
-      mntMeatProducts: double.tryParse(row[11].toString()) ?? 0.0,
-      mntFishProducts: double.tryParse(row[12].toString()) ?? 0.0,
-      mntSweetProducts: double.tryParse(row[13].toString()) ?? 0.0,
-      mntGoldProds: double.tryParse(row[14].toString()) ?? 0.0,
-      numDealsPurchases: int.tryParse(row[15].toString()) ?? 0,
-      numWebPurchases: int.tryParse(row[16].toString()) ?? 0,
-      numCatalogPurchases: int.tryParse(row[17].toString()) ?? 0,
-      numStorePurchases: int.tryParse(row[18].toString()) ?? 0,
-      numWebVisitsMonth: int.tryParse(row[19].toString()) ?? 0,
-      acceptedCmp3: int.tryParse(row[20].toString()) ?? 0,
-      acceptedCmp4: int.tryParse(row[21].toString()) ?? 0,
-      acceptedCmp5: int.tryParse(row[22].toString()) ?? 0,
-      acceptedCmp1: int.tryParse(row[23].toString()) ?? 0,
-      acceptedCmp2: int.tryParse(row[24].toString()) ?? 0,
-      complain: int.tryParse(row[25].toString()) ?? 0,
-      zCostContact: double.tryParse(row[26].toString()) ?? 0.0,
-      zRevenue: double.tryParse(row[27].toString()) ?? 0.0,
-      response: int.tryParse(row[28].toString()) ?? 0,
-    );
-  }
+  MarketingCampaignDataModel.fromMap(Map<String, dynamic> map)
+      : id = map['id'],
+        yearBirth = int.parse(map['yearBirth'].toString()),
+        education = map['education'],
+        maritalStatus = map['maritalStatus'],
+        income = double.parse(map['income'].toString()),
+        kidhome = int.parse(map['kidhome'].toString()),
+        teenhome = int.parse(map['teenhome'].toString()),
+        dtCustomer = map['dtCustomer'],
+        recency = int.parse(map['recency'].toString()),
+        mntWines = double.parse(map['mntWines'].toString()),
+        mntFruits = double.parse(map['mntFruits'].toString()),
+        mntMeatProducts = double.parse(map['mntMeatProducts'].toString()),
+        mntFishProducts = double.parse(map['mntFishProducts'].toString()),
+        mntSweetProducts = double.parse(map['mntSweetProducts'].toString()),
+        mntGoldProds = double.parse(map['mntGoldProds'].toString()),
+        numDealsPurchases = int.parse(map['numDealsPurchases'].toString()),
+        numWebPurchases = int.parse(map['numWebPurchases'].toString()),
+        numCatalogPurchases = int.parse(map['numCatalogPurchases'].toString()),
+        numStorePurchases = int.parse(map['numStorePurchases'].toString()),
+        numWebVisitsMonth = int.parse(map['numWebVisitsMonth'].toString()),
+        acceptedCmp3 = int.parse(map['acceptedCmp3'].toString()),
+        acceptedCmp4 = int.parse(map['acceptedCmp4'].toString()),
+        acceptedCmp5 = int.parse(map['acceptedCmp5'].toString()),
+        acceptedCmp1 = int.parse(map['acceptedCmp1'].toString()),
+        acceptedCmp2 = int.parse(map['acceptedCmp2'].toString()),
+        complain = int.parse(map['complain'].toString()),
+        zCostContact = double.parse(map['zCostContact'].toString()),
+        zRevenue = double.parse(map['zRevenue'].toString()),
+        response = int.parse(map['response'].toString());
 
   @override
   Map<String, dynamic> toJson() => {
@@ -196,34 +194,6 @@ class MarketingCampaignDataModel extends DataModel {
   @override
   String getDisplayName() => 'Customer $id (Income: \$${income.toInt()})';
 
-  @override
-  List<String> getNumericFields() => [
-        'yearBirth',
-        'income',
-        'kidhome',
-        'teenhome',
-        'recency',
-        'mntWines',
-        'mntFruits',
-        'mntMeatProducts',
-        'mntFishProducts',
-        'mntSweetProducts',
-        'mntGoldProds',
-        'numDealsPurchases',
-        'numWebPurchases',
-        'numCatalogPurchases',
-        'numStorePurchases',
-        'numWebVisitsMonth',
-        'acceptedCmp3',
-        'acceptedCmp4',
-        'acceptedCmp5',
-        'acceptedCmp1',
-        'acceptedCmp2',
-        'complain',
-        'zCostContact',
-        'zRevenue',
-        'response',
-      ];
 
   @override
   double? getNumericValue(String field) {
@@ -253,6 +223,71 @@ class MarketingCampaignDataModel extends DataModel {
       case 'zCostContact': return zCostContact;
       case 'zRevenue': return zRevenue;
       case 'response': return response.toDouble();
+      default: return null;
+    }
+  }
+
+  @override
+  List<FieldDescriptor> get fieldDescriptors => [
+    FieldDescriptor.numeric(
+      key: 'yearBirth',
+      label: 'Год рождения',
+    ),
+    FieldDescriptor.numeric(
+      key: 'income',
+      label: 'Доход',
+    ),
+    FieldDescriptor.numeric(
+      key: 'recency',
+      label: 'Дней с последней покупки',
+    ),
+    FieldDescriptor.numeric(
+      key: 'mntWines',
+      label: 'Потрачено на вино',
+    ),
+    FieldDescriptor.numeric(
+      key: 'mntFruits',
+      label: 'Потрачено на фрукты',
+    ),
+    FieldDescriptor.numeric(
+      key: 'mntMeatProducts',
+      label: 'Потрачено на мясо',
+    ),
+    FieldDescriptor.numeric(
+      key: 'mntFishProducts',
+      label: 'Потрачено на рыбу',
+    ),
+    FieldDescriptor.numeric(
+      key: 'mntSweetProducts',
+      label: 'Потрачено на сладости',
+    ),
+    FieldDescriptor.numeric(
+      key: 'mntGoldProds',
+      label: 'Потрачено на золото',
+    ),
+    FieldDescriptor.numeric(
+      key: 'zCostContact',
+      label: 'Стоимость контакта',
+    ),
+    FieldDescriptor.numeric(
+      key: 'zRevenue',
+      label: 'Доход',
+    ),
+    FieldDescriptor.binary(
+      key: 'response',
+      label: 'Ответ на кампанию',
+    ),
+    FieldDescriptor.categorical(
+      key: 'education',
+      label: 'Образование',
+    ),
+  ];
+
+  @override
+  String? getCategoricalValue(String key) {
+    switch (key) {
+      case 'education': return education;
+      case 'maritalStatus': return maritalStatus;
       default: return null;
     }
   }

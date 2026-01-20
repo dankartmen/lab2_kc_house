@@ -16,9 +16,8 @@ class DiabetesHistogramConfig extends HistogramConfig<DiabetesRiskPredictionData
 
   @override
   double? extractValue(DiabetesRiskPredictionDataModel data, String field) {
-    if (field == 'age') {
-      return data.getNumericValue(field);
-    }
+    final numericValue = data.getNumericValue(field);
+    if (numericValue != null) return numericValue;
     return data.getBinaryValue(field);
   }
 

@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:lab2_kc_house/core/data/field_descriptor.dart';
 
 import '../../../core/data/data_model.dart';
 
@@ -54,32 +55,7 @@ class HouseDataModel extends DataModel {
     required this.sqftLot15,
   });
 
-  /// Создает объект из CSV строки
-  factory HouseDataModel.fromCsv(List<dynamic> row) {
-    return HouseDataModel(
-      id: row[0].toString(),
-      date: _parseDate(row[1].toString()),
-      price: _parseDouble(row[2]),
-      bedrooms: _parseInt(row[3]),
-      bathrooms: _parseDouble(row[4]),
-      sqftLiving: _parseInt(row[5]),
-      sqftLot: _parseInt(row[6]),
-      floors: _parseDouble(row[7]),
-      waterfront: _parseInt(row[8]),
-      view: _parseInt(row[9]),
-      condition: _parseInt(row[10]),
-      grade: _parseInt(row[11]),
-      sqftAbove: _parseInt(row[12]),
-      sqftBasement: _parseInt(row[13]),
-      yrBuilt: _parseInt(row[14]),
-      yrRenovated: _parseInt(row[15]),
-      zipcode: row[16].toString(),
-      lat: _parseDouble(row[17]),
-      long: _parseDouble(row[18]),
-      sqftLiving15: _parseInt(row[19]),
-      sqftLot15: _parseInt(row[20]),
-    );
-  }
+  
 
   static DateTime _parseDate(String dateStr) {
     try {
@@ -145,33 +121,34 @@ class HouseDataModel extends DataModel {
   }
 
   @override
+  HouseDataModel.fromMap(Map<String, dynamic> map)
+      : id = map['id'].toString(),
+        date = _parseDate(map['date'].toString()),
+        price = _parseDouble(map['price']),
+        bedrooms = _parseInt(map['bedrooms']),
+        bathrooms = _parseDouble(map['bathrooms']),
+        sqftLiving = _parseInt(map['sqft_living']),
+        sqftLot = _parseInt(map['sqft_lot']),
+        floors = _parseDouble(map['floors']),
+        waterfront = _parseInt(map['waterfront']),
+        view = _parseInt(map['view']),
+        condition = _parseInt(map['condition']),
+        grade = _parseInt(map['grade']),
+        sqftAbove = _parseInt(map['sqft_above']),
+        sqftBasement = _parseInt(map['sqft_basement']),
+        yrBuilt = _parseInt(map['yr_built']),
+        yrRenovated = _parseInt(map['yr_renovated']),
+        zipcode = map['zipcode'].toString(),
+        lat = _parseDouble(map['lat']),
+        long = _parseDouble(map['long']),
+        sqftLiving15 = _parseInt(map['sqft_living15']),
+        sqftLot15 = _parseInt(map['sqft_lot15']);
+
+  @override
   String getDisplayName() {
     return 'Дом $id в $zipcode - \$${price.toStringAsFixed(0)}';
   }
 
-  @override
-  List<String> getNumericFields() {
-    return [
-      'price',
-      'bedrooms',
-      'bathrooms',
-      'sqft_living',
-      'sqft_lot',
-      'floors',
-      'waterfront',
-      'view',
-      'condition',
-      'grade',
-      'sqft_above',
-      'sqft_basement',
-      'yr_built',
-      'yr_renovated',
-      'lat',
-      'long',
-      'sqft_living15',
-      'sqft_lot15',
-    ];
-  }
 
   @override
   double? getNumericValue(String field) {
@@ -198,5 +175,122 @@ class HouseDataModel extends DataModel {
         debugPrint('Unknown field: $field');  // Лог для отладки
         return 0.0;  // Фикс: Fallback вместо null
     }
+  }
+
+  @override
+  List<FieldDescriptor> get fieldDescriptors => [
+    FieldDescriptor.numeric( 
+      key: 'price', 
+      label: 'Цена', 
+      min: 75000, 
+      max: 7700000,
+    ),
+    FieldDescriptor.numeric( 
+      key: 'bedrooms', 
+      label: 'Спальни', 
+      min: 0, 
+      max: 33,
+    ),
+    FieldDescriptor.numeric( 
+      key: 'bathrooms', 
+      label: 'Ванные', 
+      min: 0.0, 
+      max: 8.0,
+    ),
+    FieldDescriptor.numeric( 
+      key: 'sqft_living', 
+      label: 'Жилая площадь (кв.футы)', 
+      min: 290, 
+      max: 13540,
+    ),
+    FieldDescriptor.numeric( 
+      key: 'sqft_lot', 
+      label: 'Площадь участка (кв.футы)', 
+      min: 520, 
+      max: 1651359,
+    ),
+    FieldDescriptor.numeric( 
+      key: 'floors', 
+      label: 'Этажи', 
+      min: 1.0, 
+      max: 3.5,
+    ),
+    FieldDescriptor.numeric( 
+      key: 'waterfront', 
+      label: 'Вид на воду', 
+      min: 0, 
+      max: 1,
+    ),
+    FieldDescriptor.numeric( 
+      key: 'view', 
+      label: 'Вид', 
+      min: 0, 
+      max: 4,
+    ),
+    FieldDescriptor.numeric( 
+      key: 'condition', 
+      label: 'Состояние', 
+      min: 1, 
+      max: 5,
+    ),
+    FieldDescriptor.numeric( 
+      key: 'grade', 
+      label: 'Класс', 
+      min: 1, 
+      max: 13,
+    ),
+    FieldDescriptor.numeric( 
+      key: 'sqft_above', 
+      label: 'Площадь над землей (кв.футы)', 
+      min: 290, 
+      max: 9410,
+    ),
+    FieldDescriptor.numeric( 
+      key: 'sqft_basement', 
+      label: 'Площадь подвала (кв.футы)', 
+      min: 0, 
+      max: 4820,
+    ),
+    FieldDescriptor.numeric( 
+      key: 'yr_built', 
+      label: 'Год постройки', 
+      min: 1900, 
+      max: 2015,
+    ),
+    FieldDescriptor.numeric( 
+      key: 'yr_renovated', 
+      label: 'Год ремонта', 
+      min: 0, 
+      max: 2015,
+    ),
+    FieldDescriptor.numeric( 
+      key: 'lat', 
+      label: 'Широта', 
+      min: 47.1559, 
+      max: 47.7776,
+    ),
+    FieldDescriptor.numeric( 
+      key: 'long', 
+      label: 'Долгота', 
+      min: -122.5190, 
+      max: -121.3153,
+    ),
+    FieldDescriptor.numeric( 
+      key: 'sqft_living15', 
+      label: 'Жилая площадь соседей (кв.футы)', 
+      min: 399, 
+      max: 6210,
+    ),
+    FieldDescriptor.numeric( 
+      key: 'sqft_lot15', 
+      label: 'Площадь участка соседей (кв.футы)', 
+      min: 651, 
+      max: 871200,
+    ),
+  ];
+
+  @override
+  String? getCategoricalValue(String key) {
+    throw UnimplementedError();
   }
 }

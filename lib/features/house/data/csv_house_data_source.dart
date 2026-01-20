@@ -21,10 +21,12 @@ class CsvHouseDataSource implements DataSource<HouseDataModel> {
       // Парсинг CSV данных
       final csvData = const CsvToListConverter().convert(csvString, eol: '\n');
 
-      // Пропускаем заголовок и преобразуем строки в HouseDataModel
-      final houseData = csvData.skip(1).map((row) => HouseDataModel.fromCsv(row)).toList();
-      
-      return houseData;
+      final headers = csvData.first.map((e) => e.toString()).toList();
+
+      return csvData.skip(1).map((row) {
+        final map = Map<String, dynamic>.fromIterables(headers, row);
+        return HouseDataModel.fromMap(map);
+      }).toList();
     } catch (e) {
       throw Exception('Ошибка загрузки данных о недвижимости: $e');
     }

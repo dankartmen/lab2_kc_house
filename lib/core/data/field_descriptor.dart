@@ -49,15 +49,45 @@ class FieldDescriptor {
     this.max,
   });
 
-  /// Создаёт числовое поле.
-  factory FieldDescriptor.numeric(String key, {String? label}) =>
-      FieldDescriptor(key, label ?? key, FieldType.continuous);
+  /// Создаёт числовое (непрерывное) поле
+  static FieldDescriptor numeric({String? label, double? min, double? max, required String key}) {
+    return FieldDescriptor(
+      key: key,
+      label: label ?? key,
+      type: FieldType.continuous,
+      min: min,
+      max: max,
+    );
+  }
 
-  /// Создаёт бинарное поле (0/1).
-  factory FieldDescriptor.binary(String key, {String? label}) =>
-      FieldDescriptor._(key, label ?? key, FieldType.binary);
+  /// Создаёт бинарное поле (0/1, true/false)
+  static FieldDescriptor binary({String? label, required String key}) {
+    return FieldDescriptor(
+      key: key,
+      label: label ?? key,
+      type: FieldType.binary,
+      min: 0,
+      max: 1,
+    );
+  }
 
-  /// Создаёт категориальное поле.
-  factory FieldDescriptor.categorical(String key, {String? label}) =>
-      FieldDescriptor._(key, label ?? key, FieldType.categorical);
+  /// Создаёт категориальное поле
+  static FieldDescriptor categorical({String? label, required String key}) {
+    return FieldDescriptor(
+      key: key,
+      label: label ?? key,
+      type: FieldType.categorical,
+    );
+  }
+  
+  dynamic parse(dynamic value) {
+    switch (type) {
+      case FieldType.continuous:
+        return double.tryParse(value.toString()) ?? 0.0;
+      case FieldType.binary:
+        return int.tryParse(value.toString()) ?? 0;
+      case FieldType.categorical:
+        return value.toString();
+    }
+  }
 }

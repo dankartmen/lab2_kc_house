@@ -1,25 +1,14 @@
+import 'package:lab2_kc_house/core/data/field_descriptor.dart';
+
 import '../../pair_plots/pair_plot_config.dart';
 import '../../heart_attack/data/heart_attack_data_model.dart';
+import '../../pair_plots/pair_plot_style.dart';
 
 /// {@template heart_attack_pair_plot_config}
 /// Конфигурация диаграмм рассеяния для данных о рисках сердечных приступов.
 /// {@endtemplate}
 class HeartAttackPairPlotConfig extends PairPlotConfig<HeartAttackDataModel> {
-  /// Основные числовые поля для анализа
-  @override
-  List<String> get numericFields => [
-    'age',
-    'cholesterol',
-    'bmi',
-    'heartRate',
-    'stressLevel',
-    'triglycerides',
-    'heartAttackRisk'
-  ];
 
-  /// Группировка по риску сердечного приступа
-  @override
-  String? get hueField => 'heartAttackRisk';
 
   /// Используем расходящуюся палитру для контраста между группами риска
   @override
@@ -30,52 +19,101 @@ class HeartAttackPairPlotConfig extends PairPlotConfig<HeartAttackDataModel> {
     dotSize: 3.0,
     alpha: 0.7,
     showHistDiagonal: true,
-    showKdeDiagonal: true,
     showCorrelation: true,
     simplified: true, 
     maxPoints: 1000,
+  );
+
+  @override
+  List<FieldDescriptor> get fields => [
+    FieldDescriptor(
+      key: 'age',
+      label: 'Возраст',
+      type: FieldType.continuous,
+    ),
+    FieldDescriptor(
+      key: 'cholesterol',
+      label: 'Холестерин',
+      type: FieldType.continuous,
+    ),
+    FieldDescriptor(
+      key: 'bmi',
+      label: 'ИМТ',
+      type: FieldType.continuous,
+    ),
+    FieldDescriptor(
+      key: 'heartRate',
+      label: 'ЧСС',
+      type: FieldType.continuous,
+    ),
+    FieldDescriptor(
+      key: 'stressLevel',
+      label: 'Уровень стресса',
+      type: FieldType.continuous,
+    ),
+    FieldDescriptor(
+      key: 'triglycerides',
+      label: 'Триглицериды',
+      type: FieldType.continuous,
+    ),
+    FieldDescriptor(
+      key: 'heartAttackRisk',
+      label: 'Риск сердечного приступа',
+      type: FieldType.categorical,
+    ),
+  ];
+
+  @override
+  FieldDescriptor? get hue => FieldDescriptor.binary(
+    key: 'heartAttackRisk',
+    label: 'Риск сердечного приступа',
   );
 }
 
 /// Дополнительная конфигурация для всех числовых полей
 class FullHeartAttackPairPlotConfig extends PairPlotConfig<HeartAttackDataModel> {
-  @override
-  List<String> get numericFields => [
-    'age',
-    'cholesterol',
-    'bmi',
-    'heartRate',
-    'stressLevel',
-    'triglycerides',
-    'exerciseHoursPerWeek',
-    'sedentaryHoursPerDay',
-    'income',
-    'physicalActivityDaysPerWeek',
-    'sleepHoursPerDay',
-    'heartAttackRisk', // Включаем целевую переменную
-  ];
-
-  @override
-  String? get hueField => 'heartAttackRisk';
 
   @override
   ColorPalette? get palette => ColorPalette.categorical;
+  
+  @override
+  List<FieldDescriptor> get fields => [
+    FieldDescriptor.numeric(
+      key: 'age',
+      label: 'Возраст',
+    ),
+    FieldDescriptor.numeric(
+      key: 'cholesterol',
+      label: 'Холестерин',
+    ),
+    FieldDescriptor.numeric(
+      key: 'bmi',
+      label: 'ИМТ',
+    ),
+    FieldDescriptor.numeric(
+      key: 'heartRate',
+      label: 'ЧСС',
+    ),
+    FieldDescriptor.numeric(
+      key: 'stressLevel',
+      label: 'Уровень стресса',
+    ),
+    FieldDescriptor.numeric(
+      key: 'triglycerides',
+      label: 'Триглицериды',
+    ),
+
+  ];
+  
+  @override
+  FieldDescriptor? get hue => FieldDescriptor.numeric(
+    key: 'heartAttackRisk',
+    label: 'Риск сердечного приступа',
+  );
 }
 
 /// Конфигурация для анализа факторов образа жизни
 class LifestylePairPlotConfig extends PairPlotConfig<HeartAttackDataModel> {
-  @override
-  List<String> get numericFields => [
-    'exerciseHoursPerWeek',
-    'sedentaryHoursPerDay',
-    'sleepHoursPerDay',
-    'stressLevel',
-    'bmi',
-    'alcoholConsumption', // Двоичная переменная как числовая
-  ];
-
-  @override
-  String? get hueField => 'heartAttackRisk';
 
   @override
   ColorPalette? get palette => ColorPalette.categorical;
@@ -89,22 +127,46 @@ class LifestylePairPlotConfig extends PairPlotConfig<HeartAttackDataModel> {
 • Индекс массы тела (bmi)
 • Потребление алкоголя (alcoholConsumption)
 ''';
+
+  @override
+  List<FieldDescriptor> get fields => [
+    FieldDescriptor.numeric(
+      key: 'exerciseHoursPerWeek',
+      label: 'Часы упражнений в неделю',
+    ),
+    FieldDescriptor.numeric(
+      key: 'sedentaryHoursPerDay',
+      label: 'Сидячие часы в день',
+    ),
+    FieldDescriptor.numeric(
+      key: 'sleepHoursPerDay',
+      label: 'Часы сна в день',
+    ),
+    FieldDescriptor.numeric(
+      key: 'stressLevel',
+      label: 'Уровень стресса',
+    ),
+    FieldDescriptor.numeric(
+      key: 'bmi',
+      label: 'ИМТ',
+    ),
+    FieldDescriptor.numeric(
+      key: 'alcoholConsumption',
+      label: 'Потребление алкоголя',
+    ),
+  ];
+
+  @override
+  FieldDescriptor? get hue => FieldDescriptor.numeric(
+    key: 'heartAttackRisk',
+    label: 'Риск сердечного приступа',
+  );
 }
 
 /// Конфигурация для биохимических показателей
 class BiochemicalPairPlotConfig extends PairPlotConfig<HeartAttackDataModel> {
-  @override
-  List<String> get numericFields => [
-    'cholesterol',
-    'triglycerides',
-    'bmi',
-    'heartRate',
-    'age',
-    'heartAttackRisk',
-  ];
 
   @override
-  String? get hueField => 'heartAttackRisk';
 
   @override
   ColorPalette? get palette => ColorPalette.diverging;
@@ -113,7 +175,28 @@ class BiochemicalPairPlotConfig extends PairPlotConfig<HeartAttackDataModel> {
     dotSize: 4.0,
     alpha: 0.6,
     showHistDiagonal: true,
-    showKdeDiagonal: true, // Показываем KDE для гладких распределений
     showCorrelation: true,
+  );
+  
+  @override
+  List<FieldDescriptor> get fields => [
+    FieldDescriptor.numeric(
+      key: 'cholesterol',
+      label: 'Холестерин',
+    ),
+    FieldDescriptor.numeric(
+      key: 'triglycerides',
+      label: 'Триглицериды',
+    ),
+    FieldDescriptor.numeric(
+      key: 'heartRate',
+      label: 'ЧСС',
+    ),
+  ] ;
+  
+  @override
+  FieldDescriptor? get hue => FieldDescriptor.numeric(
+    key: 'heartAttackRisk',
+    label: 'Риск сердечного приступа',
   );
 }

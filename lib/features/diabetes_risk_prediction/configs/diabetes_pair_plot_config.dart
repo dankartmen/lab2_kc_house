@@ -8,13 +8,25 @@ import '../data/diabetes_risk_prediction_data_model.dart';
 /// {@endtemplate}
 class DiabetesPairPlotConfig extends PairPlotConfig<DiabetesRiskPredictionDataModel> {
   @override
-  List<FieldDescriptor> get numericFields => [
-    FieldDescriptor.numeric('age', label: 'Возраст'),
-    FieldDescriptor.numeric('result', label: 'Результат теста'),
+  List<FieldDescriptor> get fields => [
+    FieldDescriptor(
+      key: 'age',
+      label: 'Возраст',
+      type: FieldType.continuous,
+    ),
+    FieldDescriptor(
+      key: 'result',
+      label: 'Результат теста',
+      type: FieldType.continuous,
+    ),
   ];
 
   @override
-  FieldDescriptor? get hue => FieldDescriptor.categorical('result', label: 'Результат теста');
+  FieldDescriptor? get hue => FieldDescriptor(
+    key: 'result',
+    label: 'Результат теста',
+    type: FieldType.categorical,
+  );
 
   @override
   ColorPalette? get palette => ColorPalette.diverging;
@@ -31,19 +43,55 @@ class DiabetesPairPlotConfig extends PairPlotConfig<DiabetesRiskPredictionDataMo
 /// Конфигурация для анализа всех симптомов
 class SymptomsPairPlotConfig extends PairPlotConfig<DiabetesRiskPredictionDataModel> {
   @override
-  List<FieldDescriptor> get numericFields => [
-    FieldDescriptor.numeric('age', label: 'Возраст'),
-    FieldDescriptor.numeric('polyuria', label: 'Полиурия'),
-    FieldDescriptor.numeric('polydipsia', label: 'Полидипсия'),
-    FieldDescriptor.numeric('suddenWeightLoss', label: 'Внезапная потеря веса'),
-    FieldDescriptor.numeric('weakness', label: 'Слабость'),
-    FieldDescriptor.numeric('polyphagia', label: 'Полифагия'),
-    FieldDescriptor.numeric('obesity', label: 'Ожирение'),
-    FieldDescriptor.numeric('result', label: 'Результат теста'),
+  List<FieldDescriptor> get fields => [
+    FieldDescriptor(
+      key: 'age',
+      label: 'Возраст',
+      type: FieldType.continuous,
+    ),
+    FieldDescriptor(
+      key: 'polyuria',
+      label: 'Полиурия',
+      type: FieldType.continuous,
+    ),
+    FieldDescriptor(
+      key: 'polydipsia',
+      label: 'Полидипсия',
+      type: FieldType.continuous,
+    ),
+    FieldDescriptor(
+      key: 'suddenWeightLoss',
+      label: 'Внезапная потеря веса',
+      type: FieldType.continuous,
+    ),
+    FieldDescriptor(
+      key: 'weakness',
+      label: 'Слабость',
+      type: FieldType.continuous,
+    ),
+    FieldDescriptor(
+      key: 'polyphagia',
+      label: 'Полифагия',
+      type: FieldType.continuous,
+    ),
+    FieldDescriptor(
+      key: 'obesity',
+      label: 'Ожирение',
+      type: FieldType.continuous,
+    ),
+    FieldDescriptor(
+      key: 'result',
+      label: 'Результат теста',
+      type: FieldType.continuous,
+    ),
   ];
 
   @override
-  FieldDescriptor? get hue => FieldDescriptor.categorical('result', label: 'Результат теста');
+  FieldDescriptor? get hue => FieldDescriptor(
+    key: 'result',
+    label: 'Результат теста',
+    type: FieldType.categorical,
+  );
 
   @override
   ColorPalette? get palette => ColorPalette.categorical;

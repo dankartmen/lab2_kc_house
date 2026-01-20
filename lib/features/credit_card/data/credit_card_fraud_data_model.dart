@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:lab2_kc_house/core/data/field_descriptor.dart';
 
 import '../../../../core/data/data_model.dart';
 
@@ -177,17 +178,7 @@ class CreditCardFraudDataModel extends DataModel {
     return 'Транзакция ${time.toInt()}с - ${classLabel == 1 ? 'Мошенническая' : 'Нормальная'} - \$${amount.toStringAsFixed(2)}';
   }
 
-  @override
-  List<String> getNumericFields() {
-    return [
-      'time',
-      'v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8', 'v9', 'v10',
-      'v11', 'v12', 'v13', 'v14', 'v15', 'v16', 'v17', 'v18', 'v19', 'v20',
-      'v21', 'v22', 'v23', 'v24', 'v25', 'v26', 'v27', 'v28',
-      'amount',
-      'class',
-    ];
-  }
+  
 
   @override
   double? getNumericValue(String field) {
@@ -234,4 +225,162 @@ class CreditCardFraudDataModel extends DataModel {
 
   /// Проверяет, является ли транзакция нормальной
   bool get isNormal => classLabel == 0;
+
+  @override
+  List<FieldDescriptor> get fieldDescriptors => [
+        FieldDescriptor(
+          key: 'time',
+          label: 'Время',
+          type: FieldType.continuous,
+          min: 0,
+          max: null,
+        ),
+        FieldDescriptor(
+          key: 'amount',
+          label: 'Сумма',
+          type: FieldType.continuous,
+          min: 0,
+          max: null,
+        ),
+        FieldDescriptor(
+          key: 'class',
+          label: 'Класс',
+          type: FieldType.categorical,
+        ),
+        FieldDescriptor(
+          key: 'v1',
+          label: 'V1',
+          type: FieldType.continuous,
+        ),
+        FieldDescriptor(
+          key: 'v2',
+          label: 'V2',
+          type: FieldType.continuous,
+        ),
+        FieldDescriptor(
+          key: 'v3',
+          label: 'V3',
+          type: FieldType.continuous,
+        ),
+        FieldDescriptor(
+          key: 'v4',
+          label: 'V4',
+          type: FieldType.continuous,
+        ),
+        FieldDescriptor(
+          key: 'v5',
+          label: 'V5',
+          type: FieldType.continuous,
+        ),
+        FieldDescriptor(
+          key: 'v6',
+          label: 'V6',
+          type: FieldType.continuous,
+        ),
+        FieldDescriptor(
+          key: 'v7',
+          label: 'V7',
+          type: FieldType.continuous,
+        ),
+        FieldDescriptor(
+          key: 'v8',
+          label: 'V8',
+          type: FieldType.continuous,
+        ),
+        FieldDescriptor(
+          key: 'v9',
+          label: 'V9',
+          type: FieldType.continuous,
+        ),
+        FieldDescriptor(
+          key: 'v10',
+          label: 'V10',
+          type: FieldType.continuous,
+        ),
+        FieldDescriptor(
+          key: 'v11',
+          label: 'V11',
+          type: FieldType.continuous,
+        ),
+        FieldDescriptor(
+          key: 'v12',
+          label: 'V12',
+          type: FieldType.continuous,
+        ),
+        FieldDescriptor(
+          key: 'v13',
+          label: 'V13',
+          type: FieldType.continuous,
+        ),
+        FieldDescriptor(
+          key: 'v14',
+          label: 'V14',
+          type: FieldType.continuous,
+        ),
+        FieldDescriptor(
+          key: 'v15',
+          label: 'V15',
+          type: FieldType.continuous,
+        ),
+        FieldDescriptor.numeric(
+          key: 'v16',
+          label: 'V16',
+        ),
+        FieldDescriptor.numeric(
+          key: 'v17',
+          label: 'V17',
+        ),
+        FieldDescriptor.numeric(
+          key: 'v18',
+          label: 'V18',
+        ),
+        FieldDescriptor.numeric(
+          key: 'v19',
+          label: 'V19',
+        ),
+        FieldDescriptor.numeric(
+          key: 'v20',
+          label: 'V20',
+        ),
+        FieldDescriptor.numeric(
+          key: 'v21',
+          label: 'V21',
+        ),
+        FieldDescriptor.numeric(
+          key: 'v22',
+          label: 'V22',
+        ),
+        FieldDescriptor.numeric(
+          key: 'v23',
+          label: 'V23',
+        ),
+        FieldDescriptor.numeric(
+          key: 'v24',
+          label: 'V24',
+        ),
+        FieldDescriptor.numeric(
+          key: 'v25',
+          label: 'V25',
+        ),
+        FieldDescriptor.numeric(
+          key: 'v26',
+          label: 'V26',
+        ),
+        FieldDescriptor.numeric(
+          key: 'v27',
+          label: 'V27',
+        ),
+        FieldDescriptor.numeric(
+          key: 'v28',
+          label: 'V28',
+        ),
+  ];
+
+  @override
+  String? getCategoricalValue(String key) {
+    if (key == 'class') {
+      return classLabel.toString();
+    }
+    return null;
+  }
 }

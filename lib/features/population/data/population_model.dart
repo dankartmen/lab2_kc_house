@@ -1,3 +1,5 @@
+import 'package:lab2_kc_house/core/data/field_descriptor.dart';
+
 import '../../../core/data/data_model.dart';
 
 class PopulationData implements DataModel{
@@ -39,27 +41,25 @@ class PopulationData implements DataModel{
     this.worldPopulationPercentage
   });
 
-  factory PopulationData.fromCsv(List<dynamic> row) {
-    return PopulationData(
-      rank: int.tryParse(row[0].toString()),
-      cca3: row[1].toString(),
-      country: row[2].toString(), 
-      capital: row[3].toString(),
-      continent: row[4].toString(), 
-      population2022: double.tryParse(row[5].toString()), 
-      population2020: double.tryParse(row[6].toString()), 
-      population2015: double.tryParse(row[7].toString()),
-      population2010: double.tryParse(row[8].toString()), 
-      population2000: double.tryParse(row[9].toString()),
-      population1990: double.tryParse(row[10].toString()),
-      population1980: double.tryParse(row[11].toString()),
-      population1970: double.tryParse(row[12].toString()), 
-      area: double.tryParse(row[13].toString()), 
-      density: double.tryParse(row[14].toString()),
-      growthRate: double.tryParse(row[15].toString()), 
-      worldPopulationPercentage: double.tryParse(row[16].toString())
-    );
-  }
+  @override
+  PopulationData.fromMap(Map<String, dynamic> map)
+      : rank = map['rank'] != null ? int.tryParse(map['rank'].toString()) : null,
+        cca3 = map['cca3'],
+        country = map['country'],
+        capital = map['capital'],
+        continent = map['continent'],
+        population2022 = map['population2022'] != null ? double.tryParse(map['population2022'].toString()) : null,
+        population2020 = map['population2020'] != null ? double.tryParse(map['population2020'].toString()) : null,
+        population2015 = map['population2015'] != null ? double.tryParse(map['population2015'].toString()) : null,
+        population2010 = map['population2010'] != null ? double.tryParse(map['population2010'].toString()) : null,
+        population2000 = map['population2000'] != null ? double.tryParse(map['population2000'].toString()) : null,
+        population1990 = map['population1990'] != null ? double.tryParse(map['population1990'].toString()) : null,
+        population1980 = map['population1980'] != null ? double.tryParse(map['population1980'].toString()) : null,
+        population1970 = map['population1970'] != null ? double.tryParse(map['population1970'].toString()) : null,
+        area = map['area'] != null ? double.tryParse(map['area'].toString()) : null,
+        density = map['density'] != null ? double.tryParse(map['density'].toString()) : null,
+        growthRate = map['growthRate'] != null ? double.tryParse(map['growthRate'].toString()) : null,
+        worldPopulationPercentage = map['worldPopulationPercentage'] != null ? double.tryParse(map['worldPopulationPercentage'].toString()) : null;
 
   @override
   Map<String, dynamic> toJson() => {
@@ -82,12 +82,7 @@ class PopulationData implements DataModel{
     'worldPopulationPercentage': worldPopulationPercentage
   };
   
-  @override
-  List<String> getNumericFields() => [
-    'rank', 'population2022', 'population2020', 'population2015', 'population2010',
-    'population2000', 'population1990', 'population1980', 'population1970', 'area',
-    'density', 'growthRate', 'worldPopulationPercentage'
-  ];
+  
 
   @override
   double? getNumericValue(String field) {
@@ -111,4 +106,87 @@ class PopulationData implements DataModel{
   }
   @override
   String getDisplayName() => country ?? 'Unknown';
+
+  @override
+  List<FieldDescriptor> get fieldDescriptors => [
+    FieldDescriptor.numeric(
+      key: 'rank',
+      label: 'Ранг',
+    ),
+    FieldDescriptor.categorical(
+      key: 'cca3',
+      label: 'CCA3',
+    ),
+    FieldDescriptor.categorical(
+      key: 'country',
+      label: 'Страна',
+    ),
+    FieldDescriptor.categorical(
+      key: 'capital',
+      label: 'Столица',
+    ),
+    FieldDescriptor.categorical(
+      key: 'continent',
+      label: 'Континент',
+    ),
+    FieldDescriptor.numeric(
+      key: 'population2022',
+      label: 'Население 2022',
+    ),
+    FieldDescriptor.numeric(
+      key: 'population2020',
+      label: 'Население 2020',
+    ),
+    FieldDescriptor.numeric(
+      key: 'population2015',
+      label: 'Население 2015',
+    ),
+    FieldDescriptor.numeric(
+      key: 'population2010',
+      label: 'Население 2010',
+    ),
+    FieldDescriptor.numeric(
+      key: 'population2000',
+      label: 'Население 2000',
+    ),
+    FieldDescriptor.numeric(
+      key: 'population1990',
+      label: 'Население 1990',
+    ),
+    FieldDescriptor.numeric(
+      key: 'population1980',
+      label: 'Население 1980',
+    ),
+    FieldDescriptor.numeric(
+      key: 'population1970',
+      label: 'Население 1970',
+    ),
+    FieldDescriptor.numeric(
+      key: 'area',
+      label: 'Площадь',
+    ),
+    FieldDescriptor.numeric(
+      key: 'density',
+      label: 'Плотность',
+    ),
+    FieldDescriptor.numeric(
+      key: 'growthRate',
+      label: 'Темп роста',
+    ),
+    FieldDescriptor.numeric(
+      key: 'worldPopulationPercentage',
+      label: '% от мирового населения',
+    ),
+  ];
+
+  @override
+  String? getCategoricalValue(String key) {
+    switch (key) {
+      case 'cca3': return cca3;
+      case 'country': return country;
+      case 'capital': return capital;
+      case 'continent': return continent;
+      default: return null;
+    }
+  }
 }

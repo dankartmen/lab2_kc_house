@@ -18,6 +18,8 @@ abstract class DataModel {
   /// - [Map<String, dynamic>] содержащий все поля объекта.
   Map<String, dynamic> toJson();
 
+  DataModel.fromMap(Map<String, dynamic> map);
+  
   /// Возвращает отображаемое имя объекта.
   /// 
   /// Используется в пользовательском интерфейсе.
@@ -28,9 +30,6 @@ abstract class DataModel {
   /// Каждое поле описывается через [FieldDescriptor], который
   /// определяет тип данных и способ визуализации.
   List<FieldDescriptor> get fieldDescriptors;
-
-  /// Возвращает список дескрипторов числовых полей модели.
-  List<FieldDescriptor> getNumericFieldsDescriptors();
   
   /// Возвращает числовое значение поля.
   /// 
@@ -55,6 +54,9 @@ abstract class DataModel {
   /// - [String] категориальное значение поля;
   /// - `null`, если поле не является категориальным.
   String? getCategoricalValue(String key);
+
+
+  
 }
 
 /// {@template data_source}

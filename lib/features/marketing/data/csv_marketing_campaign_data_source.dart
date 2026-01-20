@@ -25,10 +25,12 @@ class CsvMarketingCampaignDataSource implements DataSource<MarketingCampaignData
         shouldParseNumbers: false, 
       ).convert(processedCsvString, eol: '\n');
 
-      // Пропускаем заголовок и преобразуем строки в MarketingCampaignDataModel
-      final campaignData = csvData.skip(1).map((row) => MarketingCampaignDataModel.fromCsv(row)).toList();
-      
-      return campaignData;
+      final headers = csvData.first.map((e) => e.toString()).toList();
+
+      return csvData.skip(1).map((row) {
+        final map = Map<String, dynamic>.fromIterables(headers, row);
+        return MarketingCampaignDataModel.fromMap(map);
+      }).toList();
     } catch (e) {
       throw Exception('Ошибка загрузки данных маркетинговой кампании: $e');
     }

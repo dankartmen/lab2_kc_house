@@ -21,10 +21,12 @@ class PopulationDataSource implements DataSource<PopulationData> {
       // Парсинг CSV данных
       final csvData = const CsvToListConverter().convert(csvString, eol: '\n');
 
-      // Пропускаем заголовок и преобразуем строки в PopulationData
-      final populationData = csvData.skip(1).map((row) => PopulationData.fromCsv(row)).toList();
-      
-      return populationData;
+      final headers = csvData.first.map((e) => e.toString()).toList();
+
+      return csvData.skip(1).map((row) {
+        final map = Map<String, dynamic>.fromIterables(headers, row);
+        return PopulationData.fromMap(map);
+      }).toList();
     } catch (e) {
       throw Exception('Ошибка загрузки данных о населении: $e');
     }

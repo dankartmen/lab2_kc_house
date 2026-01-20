@@ -80,6 +80,25 @@ class DiabetesRiskPredictionDataModel extends DataModel {
     required this.result,
   });
 
+  DiabetesRiskPredictionDataModel.fromMap(Map<String, dynamic> map)
+      : age = map['age'] as int,
+        gender = map['gender'] as String,
+        polyuria = map['polyuria'] as String,
+        polydipsia = map['polydipsia'] as String,
+        suddenWeightLoss = map['suddenWeightLoss'] as String,
+        weakness = map['weakness'] as String,
+        polyphagia = map['polyphagia'] as String,
+        genitalThrush = map['genitalThrush'] as String,
+        visualBlurring = map['visualBlurring'] as String,
+        itching = map['itching'] as String,
+        irritability = map['irritability'] as String,
+        delayedHealing = map['delayedHealing'] as String,
+        partialParesis = map['partialParesis'] as String,
+        muscleStiffness = map['muscleStiffness'] as String,
+        alopecia = map['alopecia'] as String,
+        obesity = map['obesity'] as String,
+        result = map['result'] as String;
+
   @override
   List<FieldDescriptor> get fieldDescriptors => const [
         FieldDescriptor(
@@ -110,28 +129,6 @@ class DiabetesRiskPredictionDataModel extends DataModel {
           type: FieldType.categorical,
         ),
       ];
-
-  @override
-  List<FieldDescriptor> getNumericFieldsDescriptors() {
-    return [
-      FieldDescriptor.numeric('age', label: 'Возраст'),
-      FieldDescriptor.binary('polyuria', label: 'Полиурия'),
-      FieldDescriptor.binary('polydipsia', label: 'Полидипсия'),
-      FieldDescriptor.binary('suddenWeightLoss', label: 'Внезапная потеря веса'),
-      FieldDescriptor.binary('weakness', label: 'Слабость'),
-      FieldDescriptor.binary('polyphagia', label: 'Полифагия'),
-      FieldDescriptor.binary('genitalThrush', label: 'Молочница'),
-      FieldDescriptor.binary('visualBlurring', label: 'Нечеткое зрение'),
-      FieldDescriptor.binary('itching', label: 'Зуд'),
-      FieldDescriptor.binary('irritability', label: 'Раздражительность'),
-      FieldDescriptor.binary('delayedHealing', label: 'Замедленное заживление'),
-      FieldDescriptor.binary('partialParesis', label: 'Частичный паралич'),
-      FieldDescriptor.binary('muscleStiffness', label: 'Мышечная скованность'),
-      FieldDescriptor.binary('alopecia', label: 'Алопеция'),
-      FieldDescriptor.binary('obesity', label: 'Ожирение'),
-      FieldDescriptor.binary('result', label: 'Результат'),
-    ];
-  }
 
 
   @override
@@ -181,4 +178,40 @@ class DiabetesRiskPredictionDataModel extends DataModel {
     if (v == 'no' || v == 'negative') return 0.0;
     return 0.0;
   }
+  double? getBinaryValue(String key) {
+  switch (key) {
+    case 'polyuria':
+      return _yesNo(polyuria);
+    case 'polydipsia':
+      return _yesNo(polydipsia);
+    case 'suddenWeightLoss':
+      return _yesNo(suddenWeightLoss);
+    case 'weakness':
+      return _yesNo(weakness);
+    case 'polyphagia':
+      return _yesNo(polyphagia);
+    case 'genitalThrush':
+      return _yesNo(genitalThrush);
+    case 'visualBlurring':
+      return _yesNo(visualBlurring);
+    case 'itching':
+      return _yesNo(itching);
+    case 'irritability':
+      return _yesNo(irritability);
+    case 'delayedHealing':
+      return _yesNo(delayedHealing);
+    case 'partialParesis':
+      return _yesNo(partialParesis);
+    case 'muscleStiffness':
+      return _yesNo(muscleStiffness);
+    case 'alopecia':
+      return _yesNo(alopecia);
+    case 'obesity':
+      return _yesNo(obesity);
+    case 'result':
+      return _yesNo(result);
+    default:
+      return null;
+  }
+}
 }

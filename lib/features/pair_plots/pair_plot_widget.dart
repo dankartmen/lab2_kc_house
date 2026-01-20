@@ -5,6 +5,7 @@ import '../../core/data/data_model.dart';
 import '../../core/data/field_descriptor.dart';
 import 'pair_plot_config.dart';
 import 'pair_plot_style.dart';
+import 'statistics_utils.dart';
 
 /// {@template pair_plot}
 /// Виджет для отображения матрицы парных диаграмм (Pair Plot).
@@ -43,12 +44,14 @@ class PairPlot<T extends DataModel> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fields = config.fields;
+    final legend = _buildHueLegend();
 
     return Card(
       margin: const EdgeInsets.all(16),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               title,
@@ -57,8 +60,21 @@ class PairPlot<T extends DataModel> extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
+
+            if (legend.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              _buildLegend(legend),
+            ],
+            
             const SizedBox(height: 12),
-            _buildMatrix(fields),
+
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: cellSize.width * fields.length,
+                child: _buildMatrix(fields),
+              ),
+            ),
           ],
         ),
       ),
@@ -68,23 +84,30 @@ class PairPlot<T extends DataModel> extends StatelessWidget {
   Widget _buildMatrix(List<FieldDescriptor> fields) {
     final n = fields.length;
 
-    return Column(
-      children: List.generate(n, (row) {
-        return Row(
-          children: List.generate(n, (col) {
-            final x = fields[col];
-            final y = fields[row];
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: n,
+        childAspectRatio: cellSize.width / cellSize.height,
+      ),
+      itemCount: n * n,
+      itemBuilder: (context, index) {
+        final row = index ~/ n;
+        final col = index % n;
 
-            return _buildCell(
-              x: x,
-              y: y,
-              isDiagonal: row == col,
-            );
-          }),
+        final x = fields[col];
+        final y = fields[row];
+
+        return _buildCell(
+          x: x,
+          y: y,
+          isDiagonal: row == col,
         );
-      }),
+      },
     );
   }
+
 
   Widget _buildCell({
     required FieldDescriptor x,
@@ -160,6 +183,59 @@ class PairPlot<T extends DataModel> extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildLegend(Map<String, Color> legend) {
+    if (legend.isEmpty) return const SizedBox.shrink();
+
+    return Wrap(
+      spacing: 12,
+      runSpacing: 8,
+      children: legend.entries.map((e) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: e.value,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              e.key,
+              style: const TextStyle(fontSize: 12),
+            ),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
+
+  Map<String, Color> _buildHueLegend() {
+    final hueField = config.hue;
+    if (hueField == null) return {};
+
+    final values = <String>{};
+
+    for (final item in data) {
+      final v = item.getCategoricalValue(hueField.key);
+      if (v != null) {
+        values.add(v);
+      }
+    }
+
+    final map = <String, Color>{};
+
+    for (final v in values) {
+      final index = v.hashCode.abs() % Colors.primaries.length;
+      map[v] = Colors.primaries[index];
+    }
+
+    return map;
   }
 
   List<double> _numericValues(FieldDescriptor field) {
@@ -243,7 +319,7 @@ class _HistogramPainter extends CustomPainter {
     final maxCount = counts.reduce(max).toDouble();
     final barWidth = size.width / bins;
 
-    final paint = Paint()..color = Colors.blue.withOpacity(0.6);
+    final paint = Paint()..color = Colors.blue.withValues(alpha: 0.6);
 
     for (int i = 0; i < bins; i++) {
       final h = counts[i] / maxCount * size.height;
@@ -291,15 +367,20 @@ class _ScatterPainter extends CustomPainter {
     final yMin = ys.reduce(min);
     final yMax = ys.reduce(max);
 
+    double? correlation;
+
+    if (style.showCorrelation && points.length > 2) {
+      correlation = StatisticsUtils.pearson(xs, ys);
+    }
+
     Offset map(double x, double y) => Offset(
-          (x - xMin) / (xMax - xMin) * size.width,
-          size.height -
-              (y - yMin) / (yMax - yMin) * size.height,
+          norm(x, xMin, xMax) * size.width,
+          size.height - norm(y, yMin, yMax) * size.height,
         );
 
     for (final p in points) {
       final paint = Paint()
-        ..color = Colors.blue.withOpacity(style.alpha)
+        ..color = _resolveColor(p.hue)
         ..style = PaintingStyle.fill;
 
       canvas.drawCircle(
@@ -308,9 +389,69 @@ class _ScatterPainter extends CustomPainter {
         paint,
       );
     }
-  }
+
+    if (style.showCorrelation && points.length > 2) {
+      final r = StatisticsUtils.pearson(xs, ys);
+
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: 'r = ${r.toStringAsFixed(2)}',
+          style: TextStyle(
+            fontSize: 10,
+            color: Colors.black.withValues(alpha: 0.7),
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+
+      textPainter.paint(canvas, const Offset(4, 4));
+    }
+  } 
 
   @override
   bool shouldRepaint(covariant _ScatterPainter old) =>
       points != old.points;
+
+
+  Color _resolveColor(String? hueValue) {
+    if (hueValue == null) {
+      return Colors.blue;
+    }
+
+    switch (palette) {
+      case ColorPalette.categorical:
+        return _categoricalColor(hueValue);
+      case ColorPalette.sequential:
+        return _sequentialColor(hueValue);
+      case ColorPalette.diverging:
+        return _divergingColor(hueValue);
+      case ColorPalette.defaultPalette:
+      default:
+        return _categoricalColor(hueValue);
+    }
+  }
+
+  Color _categoricalColor(String value) {
+    final colors = Colors.primaries;
+    final index = value.hashCode.abs() % colors.length;
+    return colors[index];
+  }
+
+  Color _sequentialColor(String value) {
+    final t = (value.hashCode.abs() % 100) / 100.0;
+    return Color.lerp(Colors.blue.shade100, Colors.blue.shade900, t)!;
+  }
+
+  Color _divergingColor(String value) {
+    final t = (value.hashCode.abs() % 100) / 100.0;
+    return t < 0.5
+        ? Color.lerp(Colors.blue, Colors.white, t * 2)!
+        : Color.lerp(Colors.white, Colors.red, (t - 0.5) * 2)!;
+  }
+
+
+  double norm(double v, double min, double max) {
+    if (max == min) return 0.5;
+    return (v - min) / (max - min);
+  }
 }

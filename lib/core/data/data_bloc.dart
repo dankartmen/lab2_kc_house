@@ -24,6 +24,15 @@ abstract class GenericBloc<T extends DataModel> extends Bloc<DataEvent, DataStat
   }
 
   /// Обработчик события загрузки данных.
+  /// 
+  /// Принимает:
+  /// - [event] - событие загрузки данных,
+  /// - [emit] - функция для emitting новых состояний.
+  /// 
+  /// Выполняет:
+  /// - Загрузку данных из источника,
+  /// - Первичный анализ данных,
+  /// - Вычисление корреляций.
   Future<void> _onLoadData(LoadDataEvent event, Emitter<DataState> emit) async {
     emit(DataLoading());
     try {
@@ -35,13 +44,24 @@ abstract class GenericBloc<T extends DataModel> extends Bloc<DataEvent, DataStat
   }
 
   /// Выполняет первичный анализ загруженных данных.
+  /// 
+  /// Принимает:
+  /// - [data] - загруженные данные для анализа,
+  /// - [emit] - функция для emitting новых состояний.
+  /// 
+  /// Выполняет:
+  /// - Статистический анализ данных,
+  /// - Вычисление матрицы корреляции,
+  /// - Формирование метаданных.
   Future<void> _performInitialAnalysis(List<T> data, Emitter<DataState> emit) async {
     DataAnalyzer.printHead(data);
     DataAnalyzer.countEmptyValues(data);
     DataAnalyzer.describe(data);
 
     final numericFields = _extractNumericFields(data);
-    final correlationMatrix = CorrelationCalculator.calculateMatrix(data, numericFields);
+    // Получаем только ключи числовых полей для вычисления корреляции
+    final numericFieldKeys = numericFields.map((fd) => fd.key).toList();
+    final correlationMatrix = CorrelationCalculator.calculateMatrix(data, numericFieldKeys);
 
     emit(DataLoaded<T>(
       data: data,
@@ -57,16 +77,34 @@ abstract class GenericBloc<T extends DataModel> extends Bloc<DataEvent, DataStat
   }
 
   /// Обработчик события дополнительного анализа данных.
+  ///
+  /// Принимает:
+  /// - [event] - событие анализа с указанием полей,
+  /// - [emit] - функция для emitting новых состояний.
+  /// 
+  /// Выполняет:
+  /// - Пересчет корреляций для указанных полей,
+  /// - Обновление состояния с новыми результатами анализа.
   Future<void> _onAnalyzeData(AnalyzeDataEvent event, Emitter<DataState> emit) async {
     final currentState = state;
     if (currentState is DataLoaded<T>) {
-      final fieldsToAnalyze = event.fields.isNotEmpty ? event.fields : currentState.numericFields;
+      // Если переданы поля для анализа, используем их, иначе все числовые поля
+      final fieldsToAnalyze = event.fields.isNotEmpty 
+          ? event.fields 
+          : currentState.numericFields.map((fd) => fd.key).toList();
+      
       final correlationMatrix = CorrelationCalculator.calculateMatrix(
         currentState.data, 
-        fieldsToAnalyze as List<String>,
+        fieldsToAnalyze,
       );
 
+      // Фильтруем FieldDescriptor для оставшихся числовых полей
+      final updatedNumericFields = currentState.numericFields
+          .where((descriptor) => fieldsToAnalyze.contains(descriptor.key))
+          .toList();
+
       emit(currentState.copyWith(
+        numericFields: updatedNumericFields,
         correlationMatrix: correlationMatrix,
         metadata: {
           ...currentState.metadata,
@@ -102,10 +140,27 @@ abstract class GenericBloc<T extends DataModel> extends Bloc<DataEvent, DataStat
     }
   }
 
-  /// Извлекает числовые поля из данных через FieldDescriptor.
+  /// Извлекает числовые поля из данных.
+  /// 
+  /// Принимает:
+  /// - [data] - данные для анализа.
+  /// 
+  /// Возвращает:
+  /// - [List<FieldDescriptor>] список дескрипторов числовых полей.
+  /// 
+  /// Если данные пусты, возвращает пустой список.
   List<FieldDescriptor> _extractNumericFields(List<T> data) {
     if (data.isEmpty) return [];
-    return data.first.getNumericFieldsDescriptors();
+    
+    // Получаем дескрипторы полей из первого элемента данных
+    final fieldDescriptors = data.first.fieldDescriptors;
+    
+    // Фильтруем числовые поля (непрерывные и бинарные)
+    return fieldDescriptors
+        .where((descriptor) => 
+            descriptor.type == FieldType.continuous || 
+            descriptor.type == FieldType.binary)
+        .toList();
   }
 
   /// Загружает дополнительные аналитические данные.

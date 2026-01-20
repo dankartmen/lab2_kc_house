@@ -4,7 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:http/http.dart' as http;
 
 class DiabetesAnalysisWidget extends StatefulWidget {
-  const DiabetesAnalysisWidget({Key? key}) : super(key: key);
+  const DiabetesAnalysisWidget({super.key});
 
   @override
   State<DiabetesAnalysisWidget> createState() => _DiabetesAnalysisWidgetState();
@@ -472,25 +472,30 @@ class _DiabetesAnalysisWidgetState extends State<DiabetesAnalysisWidget> {
     if (isR2 || isPercentage) {
       // Для R² и процентов - зеленый лучше
       if (isR2) {
-        if (numValue >= 0.7) color = Colors.green;
-        else if (numValue >= 0.5) color = Colors.blue;
-        else if (numValue >= 0.3) color = Colors.orange;
-        else color = Colors.red;
+        switch (numValue) {
+          case >= 0.7: color = Colors.green;
+          case >= 0.5: color = Colors.blue;
+          case >= 0.3: color = Colors.orange;
+          default: color = Colors.red;
+        }
       } else if (isPercentage) {
         // Для MAPE - чем меньше, тем лучше
-        if (numValue <= 10) color = Colors.green;
-        else if (numValue <= 20) color = Colors.blue;
-        else if (numValue <= 30) color = Colors.orange;
-        else color = Colors.red;
+        switch (numValue) {
+          case <= 10: color = Colors.green;
+          case <= 20: color = Colors.blue;
+          case <= 30: color = Colors.orange;
+          default: color = Colors.red;
+        }
       }
     } else {
       // Для ошибок - красный хуже
-      if (numValue <= 0.05) color = Colors.green;
-      else if (numValue <= 0.1) color = Colors.blue;
-      else if (numValue <= 0.2) color = Colors.orange;
-      else color = Colors.red;
+      switch (numValue) {
+        case <= 0.05: color = Colors.green;
+        case <= 0.1: color = Colors.blue;
+        case <= 0.2: color = Colors.orange;
+        default: color = Colors.red;
+      }
     }
-    
     return Text(
       formatted,
       style: TextStyle(color: color, fontWeight: FontWeight.bold),
@@ -598,7 +603,7 @@ class _DiabetesAnalysisWidgetState extends State<DiabetesAnalysisWidget> {
   Widget _buildRangeBar(String label, dynamic min, dynamic max) {
     final minVal = (min as num?)?.toDouble() ?? 0.0;
     final maxVal = (max as num?)?.toDouble() ?? 0.0;
-    final range = maxVal - minVal;
+    
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -837,7 +842,7 @@ class _DiabetesAnalysisWidgetState extends State<DiabetesAnalysisWidget> {
                   ],
                 ),
               );
-            }).toList(),
+            }),
           ],
         ),
       ),
@@ -910,7 +915,7 @@ class _DiabetesAnalysisWidgetState extends State<DiabetesAnalysisWidget> {
                   ],
                 ),
               );
-            }).toList(),
+            })
           ],
         ),
       ),
@@ -982,7 +987,7 @@ class _DiabetesAnalysisWidgetState extends State<DiabetesAnalysisWidget> {
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(item),
                 );
-              }).toList(),
+              }),
             
             const SizedBox(height: 16),
             
@@ -1000,7 +1005,7 @@ class _DiabetesAnalysisWidgetState extends State<DiabetesAnalysisWidget> {
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Text('• $item'),
                     );
-                  }).toList(),
+                  }),
                 ],
               ),
             

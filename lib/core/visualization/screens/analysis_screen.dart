@@ -1,17 +1,16 @@
 import 'dart:math';
 import 'dart:ui' as ui;
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:lab2_kc_house/features/credit_card/data/credit_card_fraud_data_model.dart';
-import 'package:lab2_kc_house/features/heart_attack/data/heart_attack_data_model.dart';
 import '../../../features/ROC/roc_chart_widget.dart';
 import '../../../features/credit_card/bloc/credit_card_fraud_bloc.dart';
 import '../../../features/histograms/histogram_config.dart';
 import '../../../features/histograms/histogram_widget.dart';
 import '../../../features/house/data/house_data_model.dart';
 import '../../../features/pair_plots/pair_plot_config.dart';
+import '../../../features/pair_plots/pair_plot_style.dart';
 import '../../../features/pair_plots/pair_plot_widget.dart';
 import '../../data/data_bloc.dart';
 import '../../data/data_event.dart';
@@ -374,7 +373,6 @@ class _GenericAnalysisScreenState<T extends DataModel> extends State<GenericAnal
                         simplified: true,
                         maxPoints: 1000
                       ),
-                      plotSize: Size(180, 180),
                     ),
                   ],
                 ),
@@ -434,16 +432,6 @@ class _GenericAnalysisScreenState<T extends DataModel> extends State<GenericAnal
           children.add(const SizedBox(height: 16));
         }
 
-        if (_visibleWidgets['regression_analysis'] ?? false && T == HouseDataModel && loadedState.metadata.containsKey('regression_analysis')) {
-          children.add(_buildRegressionAnalysis(loadedState.metadata['regression_analysis']));
-          children.add(const SizedBox(height: 16));
-        }
-
-        if (_visibleWidgets['fraud_analysis'] ?? false && widget.extraFraudAnalysisWidget != null && T == CreditCardFraudDataModel) {
-          children.add(const SizedBox(height: 20));
-          children.add(widget.extraFraudAnalysisWidget!);
-        }
-
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(children: children),
@@ -478,201 +466,6 @@ class _GenericAnalysisScreenState<T extends DataModel> extends State<GenericAnal
     );
   }
 
-  Widget _buildRegressionAnalysis(Map<String, dynamic> regressionData) {
-    final metrics = List<RegressionMetrics>.from(
-      regressionData['metrics'].map((m) => RegressionMetrics.fromJson(m)),
-    );
-    final conclusions = regressionData['conclusions'] as Map<String, dynamic>;
-    final chartsData = ChartsData.fromJson(regressionData);
-
-    return Card(
-      margin: const EdgeInsets.all(16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Регрессионный анализ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            // Таблица метрик
-            _buildMetricsTable(metrics),
-            const SizedBox(height: 16),
-            // Графики
-            _buildCharts(chartsData),
-            const SizedBox(height: 16),
-            // Выводы
-            _buildConclusions(conclusions),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMetricsTable(List<RegressionMetrics> metrics) {
-    return DataTable(
-      columns: const [
-        DataColumn(label: Text('Модель')),
-        DataColumn(label: Text('R² Train')),
-        DataColumn(label: Text('R² Test')),
-        DataColumn(label: Text('MSE Train')),
-        DataColumn(label: Text('MSE Test')),
-      ],
-      rows: metrics.map((metric) => DataRow(cells: [
-        DataCell(Text(metric.model)),
-        DataCell(Text(metric.train['R2']!.toStringAsFixed(4))),
-        DataCell(Text(metric.test['R2']!.toStringAsFixed(4))),
-        DataCell(Text(metric.train['MSE']!.toStringAsFixed(2))),
-        DataCell(Text(metric.test['MSE']!.toStringAsFixed(2))),
-      ])).toList(),
-    );
-  }
-
-  Widget _buildCharts(ChartsData data) {
-    return Column(
-      children: [
-        // Bar chart для R²
-        SizedBox(
-          height: 200,
-          child: BarChart(
-            BarChartData(
-              barGroups: [
-                for (int i = 0; i < data.models.length; i++)
-                  BarChartGroupData(x: i, barRods: [
-                    BarChartRodData(toY: data.r2Train[i], color: Colors.blue, width: 16),
-                    BarChartRodData(toY: data.r2Test[i], color: Colors.red, width: 16),
-                  ]),
-              ],
-              titlesData: FlTitlesData(
-                show: true,
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (value, meta) => Text(data.models[value.toInt()]),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        // Bar chart для MSE
-        SizedBox(
-          height: 200,
-          child: BarChart(
-            BarChartData(
-              barGroups: [
-                for (int i = 0; i < data.models.length; i++)
-                  BarChartGroupData(x: i, barRods: [
-                    BarChartRodData(toY: data.mseTrain[i], color: Colors.blue, width: 16),
-                    BarChartRodData(toY: data.mseTest[i], color: Colors.red, width: 16),
-                  ]),
-              ],
-              titlesData: FlTitlesData(
-                show: true,
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (value, meta) => Text(data.models[value.toInt()]),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        // Scatter Actual vs Predicted
-        SizedBox(
-          height: 200,
-          child: ScatterChart(
-            ScatterChartData(
-              scatterSpots: [
-                for (int i = 0; i < data.scatterActual.length; i++)
-                  ScatterSpot(data.scatterActual[i], data.scatterPred[i], show: true),
-              ],
-              minX: data.scatterActual.reduce(min),
-              maxX: data.scatterActual.reduce(max),
-              minY: data.scatterPred.reduce(min),
-              maxY: data.scatterPred.reduce(max),
-              titlesData: FlTitlesData(show: true),
-              gridData: FlGridData(show: true),
-              borderData: FlBorderData(show: true),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        // Scatter Residuals с dashed линией y=0
-        SizedBox(
-          height: 200,
-          child: Stack(
-            children: [
-              ScatterChart(
-                ScatterChartData(
-                  scatterSpots: [
-                    for (int i = 0; i < data.residualsX.length; i++)
-                      ScatterSpot(
-                        data.residualsX[i],
-                        data.residualsY[i],
-                        show: true,
-                      ),
-                  ],
-                  minX: data.residualsX.reduce(min),
-                  maxX: data.residualsX.reduce(max),
-                  minY: data.residualsY.reduce(min),
-                  maxY: data.residualsY.reduce(max),
-                  titlesData: FlTitlesData(show: true),
-                  gridData: FlGridData(show: true),
-                  borderData: FlBorderData(show: true),
-                  clipData: FlClipData.none(),
-                ),
-              ),
-              CustomPaint(
-                size: const Size(double.infinity, 200),
-                painter: DashedLinePainter(
-                  start: Offset(
-                    data.residualsX.reduce(min),  // minX
-                    0.0,  // y=0
-                  ),
-                  end: Offset(
-                    data.residualsX.reduce(max),  // maxX
-                    0.0,  // y=0
-                  ),
-                  minX: data.residualsX.reduce(min),
-                  maxX: data.residualsX.reduce(max),
-                  minY: data.residualsY.reduce(min),
-                  maxY: data.residualsY.reduce(max),
-                  marginBottom: 25,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildConclusions(Map<String, dynamic> conclusions) {
-    return Card(
-      margin: const EdgeInsets.all(16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Итоговые выводы', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            const Text('1. Влияние характеристик на стоимость:'),
-            ...List<String>.from(conclusions['influence']).map((s) => Text(s)),
-            const SizedBox(height: 8),
-            Text('2. Результаты моделирования:'),
-            Text(conclusions['best_model']),
-            const SizedBox(height: 8),
-            const Text('3. Качество моделей:'),
-            ...List<String>.from(conclusions['quality']).map((s) => Text(s)),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 class FraudAnalysisContentWidget extends StatelessWidget {
