@@ -56,11 +56,6 @@ class HeartAttackPairPlotConfig extends PairPlotConfig<HeartAttackDataModel> {
       label: 'Триглицериды',
       type: FieldType.continuous,
     ),
-    FieldDescriptor(
-      key: 'heartAttackRisk',
-      label: 'Риск сердечного приступа',
-      type: FieldType.categorical,
-    ),
   ];
 
   @override

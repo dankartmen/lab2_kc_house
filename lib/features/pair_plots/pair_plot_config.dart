@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 import '../../core/data/data_model.dart';
 import '../../core/data/field_descriptor.dart';
 
@@ -37,5 +39,47 @@ enum ColorPalette {
   sequential,
 
   /// Расходящаяся палитра.
-  diverging,
+  diverging;
+
+  /// Возвращает список цветов для палитры.
+  List<Color> get colors {
+    switch (this) {
+      case ColorPalette.defaultPalette:
+        return const [
+          Colors.blue,
+          Colors.red,
+          Colors.green,
+          Colors.orange,
+          Colors.purple,
+          Colors.teal,
+        ];
+      case ColorPalette.categorical:
+        return const [
+          Colors.blue,
+          Colors.red,
+          Colors.green,
+          Colors.orange,
+          Colors.purple,
+          Colors.teal,
+          Colors.pink,
+          Colors.brown,
+        ];
+      case ColorPalette.sequential:
+        return [
+          Colors.blue.shade100,
+          Colors.blue.shade300,
+          Colors.blue.shade500,
+          Colors.blue.shade700,
+          Colors.blue.shade900,
+        ];
+      case ColorPalette.diverging:
+        return [
+          Colors.blue.shade800,
+          Colors.blue.shade400,
+          Colors.grey.shade300,
+          Colors.red.shade400,
+          Colors.red.shade800,
+        ];
+    }
+  }
 }

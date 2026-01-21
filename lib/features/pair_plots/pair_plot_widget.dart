@@ -1,8 +1,13 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:lab2_kc_house/features/pair_plots/axis_painter.dart';
+import 'package:lab2_kc_house/features/pair_plots/layout/plot_layout.dart';
+import 'package:lab2_kc_house/features/pair_plots/plot_mapper.dart';
+import 'package:lab2_kc_house/features/pair_plots/scales/categorical_color_scale.dart';
 
 import '../../core/data/data_model.dart';
 import '../../core/data/field_descriptor.dart';
+import 'layout/scatter_layout.dart';
 import 'pair_plot_config.dart';
 import 'pair_plot_style.dart';
 import 'statistics_utils.dart';
@@ -15,7 +20,7 @@ import 'statistics_utils.dart';
 /// - безопасной цветовой группировки
 /// - отображения подписей осей
 /// {@endtemplate}
-class PairPlot<T extends DataModel> extends StatelessWidget {
+class PairPlot<T extends DataModel> extends StatefulWidget {
   /// Набор данных.
   final List<T> data;
 
@@ -40,11 +45,48 @@ class PairPlot<T extends DataModel> extends StatelessWidget {
     this.style = const PairPlotStyle(),
     this.cellSize = const Size(180, 180),
   });
+  
+  @override
+  State<PairPlot<T>> createState() => _PairPlotState<T>();
+}
+
+class _PairPlotState<T extends DataModel> extends State<PairPlot<T>> {
+  int? hoveredIndex;
+
+  void setHoveredIndex(int? index) {
+    if (hoveredIndex != index) {
+      setState(() {
+        hoveredIndex = index;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final fields = config.fields;
-    final legend = _buildHueLegend();
+    final fields = widget.config.fields;
+    final hueField = widget.config.hue;
+    
+    CategoricalColorScale? colorScale;
+    Map<String, Color>? legend;
+
+    if (hueField != null) {
+      final hueValues = widget.data
+          .map((e) => e.getCategoricalValue(hueField.key))
+          .whereType<String>()
+          .toList();
+
+      if (hueValues.isNotEmpty) {
+        colorScale = CategoricalColorScale.fromData(
+          values: hueValues,
+          palette: widget.config.palette ?? ColorPalette.defaultPalette,
+          sort: (a, b) => a.compareTo(b),
+          maxCategories: 6,
+        );
+        
+        // Создаем легенду из colorScale
+        legend = colorScale.colors;
+      }
+    }
 
     return Card(
       margin: const EdgeInsets.all(16),
@@ -54,25 +96,25 @@ class PairPlot<T extends DataModel> extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              title,
+              widget.title,
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
             ),
 
-            if (legend.isNotEmpty) ...[
+            if (legend != null && legend.isNotEmpty) ...[
               const SizedBox(height: 8),
               _buildLegend(legend),
             ],
-            
+
             const SizedBox(height: 12),
 
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: SizedBox(
-                width: cellSize.width * fields.length,
-                child: _buildMatrix(fields),
+                width: widget.cellSize.width * fields.length,
+                child: _buildMatrix(fields, colorScale, hoveredIndex),
               ),
             ),
           ],
@@ -81,7 +123,7 @@ class PairPlot<T extends DataModel> extends StatelessWidget {
     );
   }
 
-  Widget _buildMatrix(List<FieldDescriptor> fields) {
+  Widget _buildMatrix(List<FieldDescriptor> fields, CategoricalColorScale? colorScale, int? hoveredIndex) {
     final n = fields.length;
 
     // Строит матрицу графиков размером n×n, где n - количество числовых полей
@@ -91,7 +133,7 @@ class PairPlot<T extends DataModel> extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: n,
-        childAspectRatio: cellSize.width / cellSize.height,
+        childAspectRatio: widget.cellSize.width / widget.cellSize.height,
       ),
       itemCount: n * n,
       itemBuilder: (context, index) {
@@ -101,36 +143,45 @@ class PairPlot<T extends DataModel> extends StatelessWidget {
         final x = fields[col];
         final y = fields[row];
 
+        // Определяем, нужно ли рисовать оси
+        final showYAxis = col == 0;        // Только первая колонка
+        final showXAxis = row == n - 1;    // Только последняя строка
+
         return _buildCell(
           x: x,
           y: y,
           isDiagonal: row == col,
+          colorScale: colorScale,
+          showXAxis: showXAxis,
+          showYAxis: showYAxis,
         );
       },
     );
   }
 
-
   Widget _buildCell({
     required FieldDescriptor x,
     required FieldDescriptor y,
     required bool isDiagonal,
+    required CategoricalColorScale? colorScale,
+    required bool showYAxis,
+    required bool showXAxis,
   }) {
     return Container(
-      width: cellSize.width,
-      height: cellSize.height,
+      width: widget.cellSize.width,
+      height: widget.cellSize.height,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey.shade300),
       ),
       child: isDiagonal
           ? _buildDiagonalPlot(x)
-          : _buildScatterPlot(x, y),
+          : _buildScatterPlot(x, y, colorScale, showYAxis, showXAxis),
     );
   }
 
   Widget _buildDiagonalPlot(FieldDescriptor field) {
-    if (!style.showHistDiagonal ||
+    if (!widget.style.showHistDiagonal ||
         field.type == FieldType.categorical) {
       return _empty('—');
     }
@@ -152,25 +203,59 @@ class PairPlot<T extends DataModel> extends StatelessWidget {
   Widget _buildScatterPlot(
     FieldDescriptor x,
     FieldDescriptor y,
+    CategoricalColorScale? colorScale,
+    bool showYAxis,
+    bool showXAxis,
   ) {
     if (x.type == FieldType.categorical ||
         y.type == FieldType.categorical) {
       return _empty('N/A');
     }
 
-    final points = _points(x, y);
+    final points = _points(x, y, colorScale);
     if (points.isEmpty) {
       return _empty('Нет данных');
     }
 
-    return CustomPaint(
+    final layout = ScatterLayout(
+      xMin: points.map((e) => e.x).reduce(min),
+      xMax: points.map((e) => e.x).reduce(max),
+      yMin: points.map((e) => e.y).reduce(min),
+      yMax: points.map((e) => e.y).reduce(max),
+    );
+
+    final plotRect = PlotLayout().plotRect(widget.cellSize);
+    final mapper = PlotMapper(
+      plotRect: plotRect,
+      xMin: layout.xMin,
+      xMax: layout.xMax,
+      yMin: layout.yMin,
+      yMax: layout.yMax,
+    );
+
+    return _HoverableScatterCell(
+      layout: layout,
+      mapper: mapper,
+      width: widget.cellSize.width,
+      height: widget.cellSize.height,
+      data: widget.data,
+      points: points,
+      x: x,
+      y: y,
+      style: widget.style,
+      colorScale: colorScale,
+      showXAxis: showXAxis,
+      showYAxis: showYAxis,
+      onHover: setHoveredIndex,
       painter: _ScatterPainter(
+        layout: layout,
+        mapper: mapper,
         points: points,
         xLabel: x.label,
         yLabel: y.label,
-        hue: config.hue,
-        palette: config.palette,
-        style: style,
+        style: widget.style,
+        colorScale: colorScale,
+        hoveredIndex: hoveredIndex,
       ),
     );
   }
@@ -188,8 +273,6 @@ class PairPlot<T extends DataModel> extends StatelessWidget {
   }
 
   Widget _buildLegend(Map<String, Color> legend) {
-    if (legend.isEmpty) return const SizedBox.shrink();
-
     return Wrap(
       spacing: 12,
       runSpacing: 8,
@@ -216,32 +299,8 @@ class PairPlot<T extends DataModel> extends StatelessWidget {
     );
   }
 
-
-  Map<String, Color> _buildHueLegend() {
-    final hueField = config.hue;
-    if (hueField == null) return {};
-
-    final values = <String>{};
-
-    for (final item in data) {
-      final v = item.getCategoricalValue(hueField.key);
-      if (v != null) {
-        values.add(v);
-      }
-    }
-
-    final map = <String, Color>{};
-
-    for (final v in values) {
-      final index = v.hashCode.abs() % Colors.primaries.length;
-      map[v] = Colors.primaries[index];
-    }
-
-    return map;
-  }
-
   List<double> _numericValues(FieldDescriptor field) {
-    return data
+    return widget.data
         .map((e) => e.getNumericValue(field.key))
         .whereType<double>()
         .toList();
@@ -250,10 +309,12 @@ class PairPlot<T extends DataModel> extends StatelessWidget {
   List<_PlotPoint> _points(
     FieldDescriptor x,
     FieldDescriptor y,
+    CategoricalColorScale? colorScale,
   ) {
     final result = <_PlotPoint>[];
 
-    for (final item in data) {
+    for (int i = 0; i < widget.data.length; i++) {
+      final item = widget.data[i];
       final xv = item.getNumericValue(x.key);
       final yv = item.getNumericValue(y.key);
 
@@ -263,17 +324,18 @@ class PairPlot<T extends DataModel> extends StatelessWidget {
         _PlotPoint(
           x: xv,
           y: yv,
-          hue: config.hue != null
-              ? item.getCategoricalValue(config.hue!.key)
+          index: i,
+          hue: widget.config.hue != null
+              ? item.getCategoricalValue(widget.config.hue!.key)
               : null,
         ),
       );
     }
 
-    if (result.length > style.maxPoints) {
-      final step = result.length / style.maxPoints;
+    if (result.length > widget.style.maxPoints) {
+      final step = result.length / widget.style.maxPoints;
       return List.generate(
-        style.maxPoints,
+        widget.style.maxPoints,
         (i) => result[(i * step).floor()],
       );
     }
@@ -287,10 +349,12 @@ class _PlotPoint {
   final double x;
   final double y;
   final String? hue;
+  final int index;
 
   const _PlotPoint({
     required this.x,
     required this.y,
+    required this.index,
     this.hue,
   });
 }
@@ -321,7 +385,7 @@ class _HistogramPainter extends CustomPainter {
     final maxCount = counts.reduce(max).toDouble();
     final barWidth = size.width / bins;
 
-    final paint = Paint()..color = Colors.blue.withValues(alpha: 0.6);
+    final paint = Paint()..color = Colors.blue.withAlpha((0.6 * 255).toInt());
 
     for (int i = 0; i < bins; i++) {
       final h = counts[i] / maxCount * size.height;
@@ -343,56 +407,51 @@ class _HistogramPainter extends CustomPainter {
 }
 
 class _ScatterPainter extends CustomPainter {
+  final ScatterLayout layout;
+  final PlotMapper mapper;
   final List<_PlotPoint> points;
   final String xLabel;
   final String yLabel;
-  final FieldDescriptor? hue;
-  final ColorPalette? palette;
   final PairPlotStyle style;
+  final CategoricalColorScale? colorScale;
+  final int? hoveredIndex;
 
   _ScatterPainter({
+    required this.layout,
+    required this.mapper,
     required this.points,
     required this.xLabel,
     required this.yLabel,
-    required this.hue,
-    required this.palette,
     required this.style,
+    required this.colorScale,
+    this.hoveredIndex,
   });
 
+  
   @override
   void paint(Canvas canvas, Size size) {
-    final xs = points.map((e) => e.x).toList();
-    final ys = points.map((e) => e.y).toList();
-
-    final xMin = xs.reduce(min);
-    final xMax = xs.reduce(max);
-    final yMin = ys.reduce(min);
-    final yMax = ys.reduce(max);
-
-    double? correlation;
-
-    if (style.showCorrelation && points.length > 2) {
-      correlation = StatisticsUtils.pearson(xs, ys);
-    }
-
-    Offset map(double x, double y) => Offset(
-          norm(x, xMin, xMax) * size.width,
-          size.height - norm(y, yMin, yMax) * size.height,
-        );
-
+    // Рисуем точки
     for (final p in points) {
+      final isHovered = hoveredIndex != null && p.index == hoveredIndex;
+
+      final color = isHovered 
+        ? Colors.yellow
+        : colorScale != null && p.hue != null
+          ? colorScale!.colorOf(p.hue!)
+          : Colors.blue;
+
       final paint = Paint()
-        ..color = _resolveColor(p.hue)
+        ..color = color.withAlpha((style.alpha * 255).toInt())
         ..style = PaintingStyle.fill;
 
-      canvas.drawCircle(
-        map(p.x, p.y),
-        style.dotSize,
-        paint,
-      );
+      final pos = mapper.map(p.x, p.y);
+      canvas.drawCircle(pos, style.dotSize, paint);
     }
 
+    // Рисуем корреляцию
     if (style.showCorrelation && points.length > 2) {
+      final xs = points.map((e) => e.x).toList();
+      final ys = points.map((e) => e.y).toList();
       final r = StatisticsUtils.pearson(xs, ys);
 
       final textPainter = TextPainter(
@@ -400,7 +459,7 @@ class _ScatterPainter extends CustomPainter {
           text: 'r = ${r.toStringAsFixed(2)}',
           style: TextStyle(
             fontSize: 10,
-            color: Colors.black.withValues(alpha: 0.7),
+            color: Colors.black.withAlpha((0.7 * 255).toInt()),
           ),
         ),
         textDirection: TextDirection.ltr,
@@ -411,49 +470,176 @@ class _ScatterPainter extends CustomPainter {
   } 
 
   @override
-  bool shouldRepaint(covariant _ScatterPainter old) =>
-      points != old.points;
+  bool shouldRepaint(covariant _ScatterPainter old) {
+    return old.points.length != points.length ||
+           old.layout != layout ||
+           old.style != style ||
+           old.colorScale != colorScale;
+  }
+}
 
+class _HoverableScatterCell<T extends DataModel> extends StatefulWidget {
+  final double width;
+  final double height;
+  final List<_PlotPoint> points;
+  final FieldDescriptor x;
+  final FieldDescriptor y;
+  final PairPlotStyle style;
+  final CustomPainter painter;
+  final List<T> data;
+  final ScatterLayout layout;
+  final PlotMapper mapper;
+  final CategoricalColorScale? colorScale;
+  final bool showYAxis;
+  final bool showXAxis;
+  final void Function(int?)? onHover;
 
-  Color _resolveColor(String? hueValue) {
-    if (hueValue == null) {
-      return Colors.blue;
+  const _HoverableScatterCell({
+    required this.layout,
+    required this.mapper,
+    required this.width,
+    required this.height,
+    required this.points,
+    required this.x,
+    required this.y,
+    required this.style,
+    required this.painter,
+    required this.data,
+    required this.colorScale,
+    required this.showYAxis,
+    required this.showXAxis,
+    this.onHover,
+  });
+
+  @override
+  State<_HoverableScatterCell<T>> createState() =>
+      _HoverableScatterCellState<T>();
+}
+
+class _HoverableScatterCellState<T extends DataModel>
+    extends State<_HoverableScatterCell<T>> {
+
+  _PlotPoint? hovered;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onHover: (event) {
+        final local = event.localPosition;
+        final hit = _hitTest(local);
+        if (hit != hovered) {
+          widget.onHover?.call(hit?.index);
+          setState(() => hovered = hit);
+        }
+      },
+      onExit: (_) => setState(() => hovered = null),
+      child: Stack(
+        children: [
+          // Основной слой с точками
+          CustomPaint(
+            painter: widget.painter,
+            size: Size.infinite,
+          ),
+          
+          // Ось X
+          if (widget.showXAxis)
+            CustomPaint(
+              painter: AxisPainter(
+                mapper: widget.mapper,
+                axisRect: PlotLayout().xAxisRect(Size(
+                  widget.width,
+                  widget.height,
+                )),
+                orientation: AxisOrientation.horizontal,
+                label: widget.x.label,
+              ),
+              size: Size.infinite,
+            ),
+
+          // Ось Y
+          if (widget.showYAxis)
+            CustomPaint(
+              painter: AxisPainter(
+                mapper: widget.mapper,
+                axisRect: PlotLayout().yAxisRect(Size(
+                  widget.width,
+                  widget.height,
+                )),
+                orientation: AxisOrientation.vertical,
+                label: widget.y.label,
+              ),
+              size: Size.infinite,
+            ),
+
+          if (hovered != null)
+            _buildTooltip(context, hovered!),
+        ],
+      ),
+    );
+  }
+
+  _PlotPoint? _hitTest(Offset pos) {
+    const radius = 6.0;
+
+    for (final p in widget.points) {
+      final mapped = widget.mapper.map(p.x, p.y);
+      if ((mapped - pos).distance <= radius) {
+        return p;
+      }
     }
-
-    switch (palette) {
-      case ColorPalette.categorical:
-        return _categoricalColor(hueValue);
-      case ColorPalette.sequential:
-        return _sequentialColor(hueValue);
-      case ColorPalette.diverging:
-        return _divergingColor(hueValue);
-      case ColorPalette.defaultPalette:
-      default:
-        return _categoricalColor(hueValue);
-    }
+    return null;
   }
 
-  Color _categoricalColor(String value) {
-    final colors = Colors.primaries;
-    final index = value.hashCode.abs() % colors.length;
-    return colors[index];
+  Widget _buildTooltip(BuildContext context, _PlotPoint p) {
+    final item = widget.data[p.index];
+
+    return Positioned(
+      left: 4,
+      top: 4,
+      child: Material(
+        elevation: 3,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          padding: const EdgeInsets.all(6),
+          color: Colors.white,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('${widget.x.label}: ${p.x.toStringAsFixed(2)}'),
+              Text('${widget.y.label}: ${p.y.toStringAsFixed(2)}'),
+              if (p.hue != null)
+                Text('Group: ${p.hue}'),
+              Text(
+                item.getDisplayName(),
+                style: const TextStyle(fontSize: 10, color: Colors.grey),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
-  Color _sequentialColor(String value) {
-    final t = (value.hashCode.abs() % 100) / 100.0;
-    return Color.lerp(Colors.blue.shade100, Colors.blue.shade900, t)!;
-  }
+}
 
-  Color _divergingColor(String value) {
-    final t = (value.hashCode.abs() % 100) / 100.0;
-    return t < 0.5
-        ? Color.lerp(Colors.blue, Colors.white, t * 2)!
-        : Color.lerp(Colors.white, Colors.red, (t - 0.5) * 2)!;
-  }
+double norm(double v, double min, double max) {
+  if (max == min) return 0.5;
+  return (v - min) / (max - min);
+}
 
+class Viewport {
+  double xMin;
+  double xMax;
+  double yMin;
+  double yMax;
 
-  double norm(double v, double min, double max) {
-    if (max == min) return 0.5;
-    return (v - min) / (max - min);
-  }
+  Viewport({
+    required this.xMin,
+    required this.xMax,
+    required this.yMin,
+    required this.yMax,
+  });
+
+  double get xRange => xMax - xMin;
+  double get yRange => yMax - yMin;
 }
