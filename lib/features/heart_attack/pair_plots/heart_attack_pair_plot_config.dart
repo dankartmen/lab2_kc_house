@@ -12,7 +12,7 @@ class HeartAttackPairPlotConfig extends PairPlotConfig<HeartAttackDataModel> {
 
   /// Используем расходящуюся палитру для контраста между группами риска
   @override
-  ColorPalette? get palette => ColorPalette.diverging;
+  ColorPalette? get palette => ColorPalette.categorical;
 
   /// Дополнительные настройки стиля
   PairPlotStyle get style => const PairPlotStyle(

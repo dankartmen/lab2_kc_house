@@ -52,6 +52,7 @@ class PairPlot<T extends DataModel> extends StatefulWidget {
 
 class _PairPlotState<T extends DataModel> extends State<PairPlot<T>> {
   int? hoveredIndex;
+  Set<String> activeCategories = {};
 
   void setHoveredIndex(int? index) {
     if (hoveredIndex != index) {
@@ -59,6 +60,22 @@ class _PairPlotState<T extends DataModel> extends State<PairPlot<T>> {
         hoveredIndex = index;
       });
     }
+  }
+
+  void toggleCategory(String category) {
+    setState(() {
+      if (activeCategories.contains(category)) {
+        activeCategories.remove(category);
+      } else {
+        activeCategories.add(category);
+      }
+    });
+  }
+
+  bool isCategoryActive(String? category) {
+    if (category == null) return true;
+    if (activeCategories.isEmpty) return true;
+    return activeCategories.contains(category);
   }
 
   @override
@@ -105,7 +122,7 @@ class _PairPlotState<T extends DataModel> extends State<PairPlot<T>> {
 
             if (legend != null && legend.isNotEmpty) ...[
               const SizedBox(height: 8),
-              _buildLegend(legend),
+              _buildLegend(legend, activeCategories),
             ],
 
             const SizedBox(height: 12),
@@ -256,6 +273,7 @@ class _PairPlotState<T extends DataModel> extends State<PairPlot<T>> {
         style: widget.style,
         colorScale: colorScale,
         hoveredIndex: hoveredIndex,
+        activeCategories: activeCategories
       ),
     );
   }
@@ -272,28 +290,37 @@ class _PairPlotState<T extends DataModel> extends State<PairPlot<T>> {
     );
   }
 
-  Widget _buildLegend(Map<String, Color> legend) {
+  Widget _buildLegend(Map<String, Color> legend, Set<String> activeCategories) {
     return Wrap(
       spacing: 12,
       runSpacing: 8,
       children: legend.entries.map((e) {
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                color: e.value,
-                shape: BoxShape.circle,
-              ),
+        final isActive = activeCategories.isEmpty ||
+            activeCategories.contains(e.key);
+  
+        return GestureDetector(
+          onTap: () => toggleCategory(e.key),
+          child: Opacity(
+            opacity: isActive ? 1.0 : 0.3,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: e.value,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  e.key,
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ],
             ),
-            const SizedBox(width: 6),
-            Text(
-              e.key,
-              style: const TextStyle(fontSize: 12),
-            ),
-          ],
+          ),
         );
       }).toList(),
     );
@@ -317,7 +344,9 @@ class _PairPlotState<T extends DataModel> extends State<PairPlot<T>> {
       final item = widget.data[i];
       final xv = item.getNumericValue(x.key);
       final yv = item.getNumericValue(y.key);
-
+      final hue = widget.config.hue != null
+          ? item.getCategoricalValue(widget.config.hue!.key)
+          : null;
       if (xv == null || yv == null) continue;
 
       result.add(
@@ -325,9 +354,10 @@ class _PairPlotState<T extends DataModel> extends State<PairPlot<T>> {
           x: xv,
           y: yv,
           index: i,
-          hue: widget.config.hue != null
-              ? item.getCategoricalValue(widget.config.hue!.key)
-              : null,
+          hue: hue,
+          color: colorScale != null
+              ? colorScale.colorOf(hue!)
+              : Colors.blue,
         ),
       );
     }
@@ -350,11 +380,14 @@ class _PlotPoint {
   final double y;
   final String? hue;
   final int index;
+  final Color color;
+
 
   const _PlotPoint({
     required this.x,
     required this.y,
     required this.index,
+    required this.color,
     this.hue,
   });
 }
@@ -415,6 +448,7 @@ class _ScatterPainter extends CustomPainter {
   final PairPlotStyle style;
   final CategoricalColorScale? colorScale;
   final int? hoveredIndex;
+  final Set<String> activeCategories;
 
   _ScatterPainter({
     required this.layout,
@@ -424,6 +458,7 @@ class _ScatterPainter extends CustomPainter {
     required this.yLabel,
     required this.style,
     required this.colorScale,
+    required this.activeCategories,
     this.hoveredIndex,
   });
 
@@ -432,7 +467,15 @@ class _ScatterPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     // Рисуем точки
     for (final p in points) {
+      final isActiveCategory = activeCategories.isEmpty || (p.hue != null && activeCategories.contains(p.hue));
+
       final isHovered = hoveredIndex != null && p.index == hoveredIndex;
+
+      final alpha = isHovered
+          ? 1.0
+          : isActiveCategory
+              ? style.alpha
+              : 0.1;
 
       final color = isHovered 
         ? Colors.yellow
@@ -441,7 +484,7 @@ class _ScatterPainter extends CustomPainter {
           : Colors.blue;
 
       final paint = Paint()
-        ..color = color.withAlpha((style.alpha * 255).toInt())
+        ..color = color.withAlpha((alpha * 255).toInt())
         ..style = PaintingStyle.fill;
 
       final pos = mapper.map(p.x, p.y);
@@ -471,10 +514,12 @@ class _ScatterPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _ScatterPainter old) {
-    return old.points.length != points.length ||
+    return old.points != points ||
            old.layout != layout ||
            old.style != style ||
-           old.colorScale != colorScale;
+           old.colorScale != colorScale ||
+           old.hoveredIndex != hoveredIndex ||
+           old.activeCategories != activeCategories;
   }
 }
 
@@ -532,7 +577,10 @@ class _HoverableScatterCellState<T extends DataModel>
           setState(() => hovered = hit);
         }
       },
-      onExit: (_) => setState(() => hovered = null),
+      onExit: (_) { 
+        setState(() => hovered = null);
+        widget.onHover?.call(null);
+      },
       child: Stack(
         children: [
           // Основной слой с точками
