@@ -1,34 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lab2_kc_house/features/box_plots/configs/house_box_plot_config.dart';
-import 'package:lab2_kc_house/features/credit_card/bloc/credit_card_fraud_bloc.dart';
-import 'package:lab2_kc_house/features/credit_card/data/credit_card_fraud_data_model.dart';
-import 'package:lab2_kc_house/features/diabetes_risk_prediction/diabetes_analysis_widget.dart';
-import 'package:lab2_kc_house/features/marketing/bloc/marketing_campaign_bloc.dart';
-import 'package:lab2_kc_house/features/marketing/configs/marketing_campaign_histogram_config.dart';
-import 'package:lab2_kc_house/features/marketing/data/marketing_campaign_model.dart';
+import 'package:lab2_kc_house/features/pair_plots/pair_plot_style.dart';
+import 'dataset/csv_data_source.dart';
+import 'dataset/dataset.dart';
+import 'dataset/field_descriptor.dart';
 
-import 'core/visualization/screens/analysis_screen.dart';
-import 'features/diabetes_risk_prediction/bloc/diabetes_bloc.dart';
-import 'features/diabetes_risk_prediction/configs/diabetes_box_plot_config.dart';
-import 'features/diabetes_risk_prediction/configs/diabetes_histogram_config.dart';
-import 'features/diabetes_risk_prediction/configs/diabetes_pair_plot_config.dart';
-import 'features/diabetes_risk_prediction/data/diabetes_risk_prediction_data_model.dart';
-import 'features/heart_attack/bloc/heart_attack_bloc.dart';
-import 'features/heart_attack/box_plots/heart_attack_box_plot_config.dart';
-import 'features/heart_attack/data/heart_attack_data_model.dart';
-import 'features/heart_attack/heart_attack_analysis_widget.dart';
-import 'features/heart_attack/histograms/heart_attack_histogram_config.dart';
-import 'features/heart_attack/pair_plots/heart_attack_pair_plot_config.dart';
-import 'features/histograms/configs/house_histogram_config.dart';
-import 'features/histograms/configs/population_histogram_config.dart';
-import 'features/house/bloc/house_bloc.dart';
-import 'features/house/data/house_data_model.dart';
-import 'features/marketing/customer_clustering_widget.dart';
-import 'features/population/bloc/population_bloc.dart';
-import 'features/population/data/population_model.dart';
+import 'features/pair_plots/pair_plot_config.dart';
+import 'features/pair_plots/pair_plot_widget.dart';
 
-void main() {
+
+Future<void> main() async {
   runApp(const MyApp());
 }
 
@@ -52,6 +32,14 @@ class MyApp extends StatelessWidget {
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
+  Future<Dataset> _loadDataset() {
+      final source = CsvDataSource(
+        path: 'assets/heart_attack_prediction_dataset.csv',
+      );
+
+      return source.load();
+    }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -60,265 +48,47 @@ class HomeScreen extends StatelessWidget {
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => BlocProvider(
-                      create: (_) => HeartAttackBloc(),
-                      child: const HeartAttackAnalysisScreen(),
-                    ),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-                textStyle: const TextStyle(fontSize: 18),
+      body: FutureBuilder<Dataset>(
+        future: _loadDataset(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Text('Ошибка загрузки: ${snapshot.error}'),
+            );
+          }
+
+          if (!snapshot.hasData) {
+            return const Center(child: Text('Нет данных'));
+          }
+
+          final dataset = snapshot.data!;
+          // for (final f in dataset.fields) {
+          //   debugPrint('${f.key}: ${f.type} [${f.min}, ${f.max}]');
+          // }
+          return SingleChildScrollView(
+            child: PairPlot(
+              dataset: dataset,
+              config: PairPlotConfig(
+                dataset: dataset,
+                fields: dataset.fields.where((f) => f.type != FieldType.categorical).toList(),
+                style: const PairPlotStyle(
+                  dotSize: 4.0,
+                  alpha: 0.7,
+                  showHistDiagonal: true,
+                  showCorrelation: true,
+                  maxPoints: 100,
+                ),
+                palette: ColorPalette.categorical,
+                hue: FieldDescriptor.binary(key: 'Heart Attack Risk', label: 'Риск сердечного приступа'),
               ),
-              child: const Text('Анализ риска сердечных приступов'),
             ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: (){
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => BlocProvider(
-                      create: (_) => CreditCardFraudBloc(),
-                      child: GenericAnalysisScreen<CreditCardFraudDataModel>(
-                        bloc: CreditCardFraudBloc(),
-                        title: 'Анализ мошенничества с картами',
-                        autoLoad: true,
-                        extraFraudAnalysisWidget: const FraudAnalysisContentWidget(),  // Встраиваем анализ
-                      ),
-                    ),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-                textStyle: const TextStyle(fontSize: 18),
-              ),
-              child: const Text('Анализ мошенничества с кредитными картами'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => BlocProvider(
-                      create: (context) => HouseDataBloc(),
-                      child: const HouseAnalysisScreen(),
-                    ),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-                textStyle: const TextStyle(fontSize: 18),
-              ),
-              child: const Text('Анализ недвижимости'),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => BlocProvider(
-                      create: (context) => PopulationBloc(),
-                      child: const PopulationAnalysisScreen(),
-                    ),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-                textStyle: const TextStyle(fontSize: 18),
-              ),
-              child: const Text('Анализ населения'),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => BlocProvider(
-                      create: (context) => MarketingCampaignBloc(),
-                      child: const MarketingCampaignAnalysisScreen(),
-                    ),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-                textStyle: const TextStyle(fontSize: 18),
-              ),
-              child: const Text('Анализ маркетинговой кампании'),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => BlocProvider(
-                      create: (_) => DiabetesBloc(),
-                      child: const DiabetesAnalysisScreen(),
-                    ),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-                textStyle: const TextStyle(fontSize: 18),
-              ),
-              child: const Text('Анализ риска диабета'),
-            ),
-          ],
-        ),
+          );
+        },
       ),
-    );
-  }
-}
-
-/// {@template house_analysis_screen}
-/// Специализированный экран для анализа данных о недвижимости.
-/// {@endtemplate}
-class HouseAnalysisScreen extends StatelessWidget {
-  /// {@macro house_analysis_screen}
-  const HouseAnalysisScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return GenericAnalysisScreen<HouseDataModel>(
-      bloc: context.read<HouseDataBloc>(),
-      title: 'Анализ недвижимости',
-      histogramConfig: HouseHistogramConfig(),
-      histogramTitle: 'Гистограммы распределения цен и площадей',
-      boxPlotConfig: HouseBoxPlotConfig(),
-      boxPlotTitle: 'Диаграмма размаха',
-      autoLoad: true,
-    );
-  }
-}
-
-/// {@template population_analysis_screen}
-/// Специализированный экран для анализа данных о населении.
-/// {@endtemplate}
-class PopulationAnalysisScreen extends StatelessWidget {
-  /// {@macro population_analysis_screen}
-  const PopulationAnalysisScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return GenericAnalysisScreen<PopulationData>(
-      bloc: context.read<PopulationBloc>(),
-      title: 'Анализ населения стран',
-      histogramConfig: PopulationHistogramConfig(),  // Конфигурация для населения
-      histogramTitle: 'Гистограммы распределения по странам',
-      autoLoad: true,
-    );
-  }
-
-}
-
-/// {@template house_analysis_screen}
-/// Специализированный экран для анализа данных о недвижимости.
-/// {@endtemplate}
-class CreditCardFraudAnalysisScreen extends StatelessWidget {
-  /// {@macro house_analysis_screen}
-  const CreditCardFraudAnalysisScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return GenericAnalysisScreen<CreditCardFraudDataModel>(
-      bloc: context.read<CreditCardFraudBloc>(),
-      title: 'Анализ мошенничества с кредитными картами',
-      //histogramConfig: HouseHistogramConfig(),
-      //histogramTitle: 'Гистограммы распределения цен и площадей',
-      //boxPlotConfig: HouseBoxPlotConfig(),
-      //boxPlotTitle: 'Диаграмма размаха',
-      autoLoad: true,
-    );
-  }
-}
-
-/// {@template heart_attack_analysis_screen}
-/// Специализированный экран для анализа данных о рисках сердечных приступов.
-/// {@endtemplate}
-class HeartAttackAnalysisScreen extends StatelessWidget {
-  /// {@macro heart_attack_analysis_screen}
-  const HeartAttackAnalysisScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return GenericAnalysisScreen<HeartAttackDataModel>(
-      bloc: context.read<HeartAttackBloc>(),
-      title: 'Анализ риска сердечных приступов',
-      histogramConfig: HeartAttackHistogramConfig(),
-      histogramTitle: 'Гистограммы распределения факторов риска',
-      boxPlotConfig: HeartAttackBoxPlotConfig(),
-      boxPlotTitle: 'Диаграммы размаха по HeartAttackRisk',
-      pairPlotTitle: 'Парные диаграммы',
-      pairPlotConfig: HeartAttackPairPlotConfig(),
-      autoLoad: true,
-      extraAnalysisWidget: const HeartAttackAnalysisWidget(),
-    );
-  }
-}
-
-/// {@template marketing_campaign_analysis_screen}
-/// Специализированный экран для анализа маркетинговой компании.
-/// {@endtemplate}
-class MarketingCampaignAnalysisScreen extends StatelessWidget {
-  /// {@macro marketing_campaign_analysis_screen}
-  const MarketingCampaignAnalysisScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return GenericAnalysisScreen<MarketingCampaignDataModel>(
-      bloc: context.read<MarketingCampaignBloc>(),
-      title: 'Анализ риска маркетинговой кампании',
-      histogramTitle: 'Гистограммы для маркетинговой кампании',
-      histogramConfig: MarketingHistogramConfig(),
-      boxPlotTitle: 'Диаграммы размаха для маркетинговой кампании',
-      //pairPlotTitle: 'Парные диаграммы',
-      //pairPlotConfig: GroupedMarketingCampaignPairPlotConfig(),
-      extraAnalysisWidget: const CustomerClusteringWidget(
-        apiUrl: "http://195.225.111.85:8000/api/customer-clustering",
-      ),
-      autoLoad: true,
-    );
-  }
-}
-
-/// {@template diabetes_analysis_screen}
-/// Специализированный экран для анализа данных о рисках диабета.
-/// {@endtemplate}
-class DiabetesAnalysisScreen extends StatelessWidget {
-  /// {@macro diabetes_analysis_screen}
-  const DiabetesAnalysisScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return GenericAnalysisScreen<DiabetesRiskPredictionDataModel>(
-      bloc: context.read<DiabetesBloc>(),
-      title: 'Анализ риска диабета',
-      histogramConfig: DiabetesHistogramConfig(),
-      histogramTitle: 'Гистограммы распределения симптомов',
-      boxPlotConfig: DiabetesBoxPlotConfig(),
-      boxPlotTitle: 'Диаграммы размаха по результату теста',
-      pairPlotTitle: 'Парные диаграммы симптомов',
-      pairPlotConfig: SymptomsPairPlotConfig(),
-      autoLoad: true,
-      extraAnalysisWidget: DiabetesAnalysisWidget(),
     );
   }
 }

@@ -1,6 +1,5 @@
-import '../../features/credit_card/data/fraud_analysis_model.dart';
 import 'data_model.dart';
-import 'field_descriptor.dart';
+import '../../dataset/field_descriptor.dart';
 
 /// {@template data_state}
 /// Базовое состояние для управления состоянием данных в BLoC.
@@ -36,14 +35,12 @@ class DataLoaded<T extends DataModel> extends DataState {
 
   final Map<String, dynamic> metadata;
 
-  final FraudAnalysisModel? fraudAnalysis;
 
   const DataLoaded({
     required this.data,
     required this.numericFields,
     required this.correlationMatrix,
     this.metadata = const {},
-    this.fraudAnalysis,
   });
 
   DataLoaded<T> copyWith({
@@ -51,14 +48,12 @@ class DataLoaded<T extends DataModel> extends DataState {
     List<FieldDescriptor>? numericFields,
     Map<String, Map<String, double>>? correlationMatrix,
     Map<String, dynamic>? metadata,
-    FraudAnalysisModel? fraudAnalysis,
   }) {
     return DataLoaded<T>(
       data: data ?? this.data,
       numericFields: numericFields ?? this.numericFields,
       correlationMatrix: correlationMatrix ?? this.correlationMatrix,
       metadata: metadata ?? this.metadata,
-      fraudAnalysis: fraudAnalysis ?? this.fraudAnalysis,
     );
   }
 
@@ -69,8 +64,7 @@ class DataLoaded<T extends DataModel> extends DataState {
         other.data == data &&
         other.numericFields == numericFields &&
         other.correlationMatrix == correlationMatrix &&
-        other.metadata == metadata &&
-        other.fraudAnalysis == fraudAnalysis;
+        other.metadata == metadata;
   }
 
   @override
@@ -78,8 +72,7 @@ class DataLoaded<T extends DataModel> extends DataState {
       data.hashCode ^
       numericFields.hashCode ^
       correlationMatrix.hashCode ^
-      metadata.hashCode ^
-      fraudAnalysis.hashCode;
+      metadata.hashCode;
 }
 
 /// {@template data_error}

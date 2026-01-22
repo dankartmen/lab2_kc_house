@@ -25,7 +25,7 @@ enum FieldType {
 /// - отображения подписей в UI
 /// {@endtemplate}
 class FieldDescriptor {
-  /// Уникальный ключ поля (должен совпадать с ключами DataModel).
+  /// Уникальный ключ поля (имя колонки в Dataset).
   final String key;
 
   /// Человеко-читаемое название поля.
@@ -34,10 +34,10 @@ class FieldDescriptor {
   /// Тип поля.
   final FieldType type;
 
-  /// Минимальное значение (для числовых полей).
+  /// Минимальное значение (опционально, может быть вычислено).
   final double? min;
 
-  /// Максимальное значение (для числовых полей).
+  /// Максимальное значение (опционально, может быть вычислено).
   final double? max;
 
   /// {@macro field_descriptor_class}
@@ -80,14 +80,41 @@ class FieldDescriptor {
     );
   }
   
-  dynamic parse(dynamic value) {
+  dynamic parse(dynamic raw) {
+    if (raw == null) return null;
+
     switch (type) {
       case FieldType.continuous:
-        return double.tryParse(value.toString()) ?? 0.0;
+        return double.tryParse(raw.toString());
       case FieldType.binary:
-        return int.tryParse(value.toString()) ?? 0;
+        final isTrue = raw == true ||
+            raw == 1 ||
+            raw.toString() == '1' ||
+            raw.toString().toLowerCase() == 'true';
+
+        return isTrue ? 1 : 0; 
+
       case FieldType.categorical:
-        return value.toString();
+        return raw.toString();
+    }
+  }
+
+  String? parseCategory(dynamic raw) {
+    if (raw == null) return null;
+
+    switch (type) {
+      case FieldType.binary:
+        final isTrue = raw == true ||
+            raw == 1 ||
+            raw.toString() == '1' ||
+            raw.toString().toLowerCase() == 'true';
+        return isTrue ? '1' : '0';
+
+      case FieldType.categorical:
+        return raw.toString();
+
+      case FieldType.continuous:
+        return null;
     }
   }
 }

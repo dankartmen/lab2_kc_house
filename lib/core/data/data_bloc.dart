@@ -6,7 +6,7 @@ import '../analysis/data_analyzer.dart';
 import 'data_event.dart';
 import 'data_model.dart';
 import 'data_state.dart';
-import 'field_descriptor.dart';
+import '../../dataset/field_descriptor.dart';
 
 /// {@template generic_bloc}
 /// Базовый BLoC для работы с данными любого типа.

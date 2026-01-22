@@ -6,9 +6,13 @@ import 'package:lab2_kc_house/features/pair_plots/plot_mapper.dart';
 import 'package:lab2_kc_house/features/pair_plots/scales/categorical_color_scale.dart';
 
 import '../../core/data/data_model.dart';
-import '../../core/data/field_descriptor.dart';
+
+import '../../dataset/dataset.dart';
+import '../../dataset/dataset_column.dart';
+import '../../dataset/field_descriptor.dart';
 import 'layout/scatter_layout.dart';
 import 'pair_plot_config.dart';
+import 'pair_plot_controller.dart';
 import 'pair_plot_style.dart';
 import 'statistics_utils.dart';
 
@@ -22,35 +26,35 @@ import 'statistics_utils.dart';
 /// {@endtemplate}
 class PairPlot<T extends DataModel> extends StatefulWidget {
   /// Набор данных.
-  final List<T> data;
+   final Dataset dataset;
 
   /// Конфигурация диаграммы.
-  final PairPlotConfig<T> config;
-
-  /// Заголовок.
-  final String title;
+  final PairPlotConfig config;
 
   /// Стиль отображения.
   final PairPlotStyle style;
 
   /// Размер одной ячейки.
   final Size cellSize;
+ 
+  /// Контроллер для управления состоянием.
+  final PairPlotController? controller;
 
   /// {@macro pair_plot}
   const PairPlot({
     super.key,
-    required this.data,
+    required this.dataset,
     required this.config,
-    required this.title,
     this.style = const PairPlotStyle(),
     this.cellSize = const Size(180, 180),
+    this.controller,
   });
   
   @override
-  State<PairPlot<T>> createState() => _PairPlotState<T>();
+  State<PairPlot> createState() => _PairPlotState();
 }
 
-class _PairPlotState<T extends DataModel> extends State<PairPlot<T>> {
+class _PairPlotState extends State<PairPlot> {
   int? hoveredIndex;
   Set<String> activeCategories = {};
 
@@ -87,10 +91,14 @@ class _PairPlotState<T extends DataModel> extends State<PairPlot<T>> {
     Map<String, Color>? legend;
 
     if (hueField != null) {
-      final hueValues = widget.data
-          .map((e) => e.getCategoricalValue(hueField.key))
-          .whereType<String>()
-          .toList();
+      final hueValues = widget.dataset.rows
+        .map((row) => row[hueField.key])
+        .where((v) => v != null)
+        .map((v) => hueField.parseCategory(v))
+        .whereType<String>()
+        .toSet()
+        .toList();
+
 
       if (hueValues.isNotEmpty) {
         colorScale = CategoricalColorScale.fromData(
@@ -101,7 +109,7 @@ class _PairPlotState<T extends DataModel> extends State<PairPlot<T>> {
         );
         
         // Создаем легенду из colorScale
-        legend = colorScale.colors;
+        legend = colorScale.legend;
       }
     }
 
@@ -112,13 +120,6 @@ class _PairPlotState<T extends DataModel> extends State<PairPlot<T>> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              widget.title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
 
             if (legend != null && legend.isNotEmpty) ...[
               const SizedBox(height: 8),
@@ -192,16 +193,20 @@ class _PairPlotState<T extends DataModel> extends State<PairPlot<T>> {
         border: Border.all(color: Colors.grey.shade300),
       ),
       child: isDiagonal
-          ? _buildDiagonalPlot(x)
+          ? _buildDiagonalPlot(x, colorScale)
           : _buildScatterPlot(x, y, colorScale, showYAxis, showXAxis),
     );
   }
 
-  Widget _buildDiagonalPlot(FieldDescriptor field) {
-    if (!widget.style.showHistDiagonal ||
-        field.type == FieldType.categorical) {
+  Widget _buildDiagonalPlot(FieldDescriptor field, CategoricalColorScale? colorScale) {
+    if (field.type == FieldType.categorical) {
+      return _buildCategoricalHistogram(field, colorScale);
+    }
+
+    if (!widget.style.showHistDiagonal) {
       return _empty('—');
     }
+
 
     final values = _numericValues(field);
 
@@ -217,6 +222,22 @@ class _PairPlotState<T extends DataModel> extends State<PairPlot<T>> {
     );
   }
 
+  Widget _buildCategoricalHistogram(FieldDescriptor field, CategoricalColorScale? colorScale) {
+    final values = widget.dataset.rows
+        .map((r) => r[field.key])
+        .whereType<String>()
+        .toList();
+
+    if (values.isEmpty) return _empty('Нет данных');
+
+    return CustomPaint(
+      painter: _CategoricalHistogramPainter(
+        colorScale: colorScale,
+        values: values,
+      ),
+    );
+  }
+
   Widget _buildScatterPlot(
     FieldDescriptor x,
     FieldDescriptor y,
@@ -224,10 +245,16 @@ class _PairPlotState<T extends DataModel> extends State<PairPlot<T>> {
     bool showYAxis,
     bool showXAxis,
   ) {
-    if (x.type == FieldType.categorical ||
+    if (x.type == FieldType.categorical &&
         y.type == FieldType.categorical) {
       return _empty('N/A');
     }
+
+    if (x.type == FieldType.categorical ||
+        y.type == FieldType.categorical) {
+      return _buildCategoricalNumericPlot(x, y, colorScale, showXAxis, showYAxis);
+    }
+
 
     final points = _points(x, y, colorScale);
     if (points.isEmpty) {
@@ -255,7 +282,6 @@ class _PairPlotState<T extends DataModel> extends State<PairPlot<T>> {
       mapper: mapper,
       width: widget.cellSize.width,
       height: widget.cellSize.height,
-      data: widget.data,
       points: points,
       x: x,
       y: y,
@@ -278,6 +304,43 @@ class _PairPlotState<T extends DataModel> extends State<PairPlot<T>> {
     );
   }
 
+  Widget _buildCategoricalNumericPlot(
+    FieldDescriptor x,
+    FieldDescriptor y,
+    CategoricalColorScale? colorScale,
+    bool showXAxis,
+    bool showYAxis,
+  ) {
+    final isXCat = x.type == FieldType.categorical;
+    final catField = isXCat ? x : y;
+    final numField = isXCat ? y : x;
+
+    final rows = widget.dataset.rows;
+
+    final categories = rows
+        .map((r) => r[catField.key])
+        .whereType<String>()
+        .toSet()
+        .toList();
+
+    if (categories.isEmpty) return _empty('Нет данных');
+
+    final plotRect = PlotLayout().plotRect(widget.cellSize);
+
+    return CustomPaint(
+      painter: _StripPlotPainter(
+        rows: rows,
+        catField: catField,
+        numField: numField,
+        categories: categories,
+        plotRect: plotRect,
+        colorScale: colorScale,
+        isVertical: isXCat,
+      ),
+    );
+  }
+
+
   Widget _empty(String text) {
     return Center(
       child: Text(
@@ -290,14 +353,14 @@ class _PairPlotState<T extends DataModel> extends State<PairPlot<T>> {
     );
   }
 
-  Widget _buildLegend(Map<String, Color> legend, Set<String> activeCategories) {
+  Widget _buildLegend(Map<String, Color> legend, Set<String> activeCategories,) {
     return Wrap(
       spacing: 12,
       runSpacing: 8,
       children: legend.entries.map((e) {
         final isActive = activeCategories.isEmpty ||
             activeCategories.contains(e.key);
-  
+
         return GestureDetector(
           onTap: () => toggleCategory(e.key),
           child: Opacity(
@@ -326,11 +389,9 @@ class _PairPlotState<T extends DataModel> extends State<PairPlot<T>> {
     );
   }
 
+
   List<double> _numericValues(FieldDescriptor field) {
-    return widget.data
-        .map((e) => e.getNumericValue(field.key))
-        .whereType<double>()
-        .toList();
+    return DatasetColumn.numeric(widget.dataset, field);
   }
 
   List<_PlotPoint> _points(
@@ -340,38 +401,35 @@ class _PairPlotState<T extends DataModel> extends State<PairPlot<T>> {
   ) {
     final result = <_PlotPoint>[];
 
-    for (int i = 0; i < widget.data.length; i++) {
-      final item = widget.data[i];
-      final xv = item.getNumericValue(x.key);
-      final yv = item.getNumericValue(y.key);
-      final hue = widget.config.hue != null
-          ? item.getCategoricalValue(widget.config.hue!.key)
-          : null;
-      if (xv == null || yv == null) continue;
+    final rows = widget.dataset.rows;
+
+    for (int i = 0; i < rows.length; i++) {
+      final row = rows[i];
+      final xv = row[x.key];
+      final yv = row[y.key];
+
+      if (xv is! num || yv is! num) continue;
+
+      final hueValue = widget.config.hue;
+
+      final hue = hueValue?.parseCategory(row[hueValue.key]);
 
       result.add(
         _PlotPoint(
-          x: xv,
-          y: yv,
+          x: xv.toDouble(),
+          y: yv.toDouble(),
           index: i,
           hue: hue,
-          color: colorScale != null
-              ? colorScale.colorOf(hue!)
+          color: colorScale != null && hue != null
+              ? colorScale.colorOf(hue)
               : Colors.blue,
         ),
       );
     }
 
-    if (result.length > widget.style.maxPoints) {
-      final step = result.length / widget.style.maxPoints;
-      return List.generate(
-        widget.style.maxPoints,
-        (i) => result[(i * step).floor()],
-      );
-    }
-
     return result;
   }
+  
 }
 
 /// Внутренняя модель точки.
@@ -392,6 +450,77 @@ class _PlotPoint {
   });
 }
 
+
+class _StripPlotPainter extends CustomPainter {
+  final List<Map<String, dynamic>> rows;
+  final FieldDescriptor catField;
+  final FieldDescriptor numField;
+  final List<String> categories;
+  final Rect plotRect;
+  final bool isVertical;
+  final CategoricalColorScale? colorScale;
+
+  _StripPlotPainter({
+    required this.rows,
+    required this.catField,
+    required this.numField,
+    required this.categories,
+    required this.plotRect,
+    required this.isVertical,
+    this.colorScale,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rnd = Random(42);
+
+    final nums = rows
+        .map((r) => r[numField.key])
+        .whereType<num>()
+        .map((e) => e.toDouble())
+        .toList();
+
+    if (nums.isEmpty) return;
+
+    final minV = nums.reduce(min);
+    final maxV = nums.reduce(max);
+
+    for (final row in rows) {
+      final cat = row[catField.key];
+      final numValue = row[numField.key];
+
+      if (cat is! String || numValue is! num) continue;
+
+      final catIndex = categories.indexOf(cat);
+      if (catIndex == -1) continue;
+
+      final jitter = (rnd.nextDouble() - 0.5) * 0.6;
+
+      final dx = isVertical
+          ? plotRect.left +
+              (catIndex + 0.5 + jitter) / categories.length * plotRect.width
+          : plotRect.left +
+              norm(numValue.toDouble(), minV, maxV) * plotRect.width;
+
+      final dy = isVertical
+          ? plotRect.bottom -
+              norm(numValue.toDouble(), minV, maxV) * plotRect.height
+          : plotRect.bottom -
+              (catIndex + 0.5 + jitter) / categories.length * plotRect.height;
+
+      final paint = Paint()
+        ..color = colorScale?.colorOf(cat) ?? Colors.blue
+        ..style = PaintingStyle.fill;
+
+      canvas.drawCircle(Offset(dx, dy), 3, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+
 class _HistogramPainter extends CustomPainter {
   final List<double> values;
   final String label;
@@ -409,6 +538,7 @@ class _HistogramPainter extends CustomPainter {
     final counts = List<int>.filled(bins, 0);
 
     for (final v in values) {
+      if (maxV == minV) return;
       final i = ((v - minV) / (maxV - minV) * (bins - 1))
           .clamp(0, bins - 1)
           .toInt();
@@ -438,6 +568,59 @@ class _HistogramPainter extends CustomPainter {
   bool shouldRepaint(covariant _HistogramPainter old) =>
       values != old.values;
 }
+
+class _CategoricalHistogramPainter extends CustomPainter {
+  final List<String> values;
+  final CategoricalColorScale? colorScale;
+
+  _CategoricalHistogramPainter({
+    required this.values,
+    required this.colorScale,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (values.isEmpty) return;
+
+    // Подсчет частот
+    final Map<String, int> counts = {};
+    for (final v in values) {
+      counts[v] = (counts[v] ?? 0) + 1;
+    }
+
+    final categories = colorScale != null
+        ? colorScale!.categories.where((c) => counts.containsKey(c)).toList()
+        : counts.keys.toList();
+    final maxCount = counts.values.reduce(max).toDouble();
+
+    final barWidth = size.width / categories.length;
+
+    final paint = Paint()
+      ..color = Colors.blue.withAlpha((0.6 * 255).toInt())
+      ..style = PaintingStyle.fill;
+
+    for (int i = 0; i < categories.length; i++) {
+      final count = counts[categories[i]]!;
+      final h = count / maxCount * size.height;
+
+      canvas.drawRect(
+        Rect.fromLTWH(
+          i * barWidth,
+          size.height - h,
+          barWidth * 0.8,
+          h,
+        ),
+        paint..color = colorScale?.colorOf(categories[i]) ?? Colors.blue,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _CategoricalHistogramPainter old) {
+    return old.values != values;
+  }
+}
+
 
 class _ScatterPainter extends CustomPainter {
   final ScatterLayout layout;
@@ -523,7 +706,7 @@ class _ScatterPainter extends CustomPainter {
   }
 }
 
-class _HoverableScatterCell<T extends DataModel> extends StatefulWidget {
+class _HoverableScatterCell extends StatefulWidget {
   final double width;
   final double height;
   final List<_PlotPoint> points;
@@ -531,7 +714,6 @@ class _HoverableScatterCell<T extends DataModel> extends StatefulWidget {
   final FieldDescriptor y;
   final PairPlotStyle style;
   final CustomPainter painter;
-  final List<T> data;
   final ScatterLayout layout;
   final PlotMapper mapper;
   final CategoricalColorScale? colorScale;
@@ -549,7 +731,6 @@ class _HoverableScatterCell<T extends DataModel> extends StatefulWidget {
     required this.y,
     required this.style,
     required this.painter,
-    required this.data,
     required this.colorScale,
     required this.showYAxis,
     required this.showXAxis,
@@ -557,12 +738,12 @@ class _HoverableScatterCell<T extends DataModel> extends StatefulWidget {
   });
 
   @override
-  State<_HoverableScatterCell<T>> createState() =>
-      _HoverableScatterCellState<T>();
+  State<_HoverableScatterCell> createState() =>
+      _HoverableScatterCellState();
 }
 
-class _HoverableScatterCellState<T extends DataModel>
-    extends State<_HoverableScatterCell<T>> {
+class _HoverableScatterCellState
+    extends State<_HoverableScatterCell> {
 
   _PlotPoint? hovered;
 
@@ -639,7 +820,6 @@ class _HoverableScatterCellState<T extends DataModel>
   }
 
   Widget _buildTooltip(BuildContext context, _PlotPoint p) {
-    final item = widget.data[p.index];
 
     return Positioned(
       left: 4,
@@ -658,7 +838,7 @@ class _HoverableScatterCellState<T extends DataModel>
               if (p.hue != null)
                 Text('Group: ${p.hue}'),
               Text(
-                item.getDisplayName(),
+                'Row: ${p.index}',
                 style: const TextStyle(fontSize: 10, color: Colors.grey),
               ),
             ],

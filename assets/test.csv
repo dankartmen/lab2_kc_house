@@ -1,0 +1,6 @@
+age,sex,chol,cp
+63,1,233,typical
+37,1,250,atypical
+41,0,204,non-anginal
+56,1,236,asymptomatic
+57,0,354,asymptomatic

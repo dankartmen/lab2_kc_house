@@ -1,4 +1,4 @@
-import 'field_descriptor.dart' show FieldDescriptor;
+import '../../dataset/field_descriptor.dart' show FieldDescriptor;
 
 /// {@template data_model}
 /// Базовый абстрактный класс для всех моделей данных в системе.

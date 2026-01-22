@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:lab2_kc_house/features/pair_plots/pair_plot_style.dart';
 
-import '../../core/data/data_model.dart';
-import '../../core/data/field_descriptor.dart';
+import '../../dataset/dataset.dart';
+import '../../dataset/field_descriptor.dart';
 
 /// {@template pair_plot_config}
 /// Базовая конфигурация для парных диаграмм (Pair Plot).
@@ -11,20 +12,24 @@ import '../../core/data/field_descriptor.dart';
 /// - какое поле используется для группировки (hue)
 /// - цветовую палитру
 /// {@endtemplate}
-abstract class PairPlotConfig<T extends DataModel> {
+class PairPlotConfig{
   /// {@macro pair_plot_config}
-  const PairPlotConfig();
+  const PairPlotConfig({required this.dataset, required this.style, required this.fields, required this.hue, required this.palette});
 
+  final Dataset dataset;
+
+  final PairPlotStyle style;
+  
   /// Поля, используемые для построения матрицы диаграмм.
-  List<FieldDescriptor> get fields;
+  final List<FieldDescriptor> fields;
 
   /// Поле, используемое для цветовой группировки.
   ///
   /// Должно иметь тип [FieldType.categorical].
-  FieldDescriptor? get hue;
+  final FieldDescriptor? hue;
 
   /// Цветовая палитра для группировки.
-  ColorPalette? get palette;
+  final ColorPalette? palette;
 }
 
 /// Цветовые палитры для визуализации.

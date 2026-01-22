@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../data/data_model.dart';
-import '../data/field_descriptor.dart';
+import '../../dataset/field_descriptor.dart';
 import 'statistics_calculator.dart';
 
 /// {@template data_analyzer}
