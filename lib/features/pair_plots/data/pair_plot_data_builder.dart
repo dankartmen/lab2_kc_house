@@ -36,23 +36,13 @@ class PairPlotDataBuilder {
         .map((e) => e.toDouble())
         .toList();
     
-    List<String?>? hueValues = cachedHueValues;
-    if (hue != null && hueValues == null) {
-      hueValues = dataset.rows
-          .map((r) => r[hue.key])
-          .map((v) => hue.parseCategory(v))
-          .toList();
-    }
-
     for (int i = 0; i < dataset.rows.length; i++) {
       if (i >= xValues.length || i >= yValues.length) continue;
-      
+      final row = dataset.rows[i];
       final xv = xValues[i];
       final yv = yValues[i];
       
-      final category = (hue != null && hueValues != null && i < hueValues.length)
-          ? hueValues[i]
-          : null;
+      final category = hue?.parseCategory(row[hue.key]);
 
       final color = (colorScale != null && category != null)
           ? colorScale.colorOf(category)
