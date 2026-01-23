@@ -20,7 +20,7 @@ class HoverableScatterCell extends StatefulWidget {
   final bool showXAxis;
   final PlotLayout plotLayout;
   final PairPlotController controller;
-  final List<ScatterPoint>? filteredPoints;
+  final List<ScatterPoint> filteredPoints;
 
   const HoverableScatterCell({
     super.key,
@@ -34,7 +34,7 @@ class HoverableScatterCell extends StatefulWidget {
     required this.showXAxis,
     required this.plotLayout,
     required this.controller, 
-    this.filteredPoints,
+    required this.filteredPoints,
   });
 
   @override
@@ -49,7 +49,7 @@ class _HoverableScatterCellState extends State<HoverableScatterCell> {
     return MouseRegion(
       onHover: (event) {
         final local = event.localPosition;
-        final hit = _hitTest(local);
+        final hit = _hitTest(local, widget.filteredPoints);
         if (hit != hoveredIndex) {
           widget.controller.setHoveredIndex(hit);
           setState(() => hoveredIndex = hit);
@@ -70,8 +70,7 @@ class _HoverableScatterCellState extends State<HoverableScatterCell> {
               alpha: widget.style.alpha,
               showCorrelation: widget.style.showCorrelation,
               hoveredIndex: hoveredIndex,
-              activeCategories: widget.controller.activeCategories,
-              filteredPoints: widget.filteredPoints,
+              pointsToDraw: widget.filteredPoints,
             ),
             size: Size.infinite,
           ),
@@ -117,10 +116,10 @@ class _HoverableScatterCellState extends State<HoverableScatterCell> {
     );
   }
 
-  int? _hitTest(Offset pos) {
+  int? _hitTest(Offset pos, List<ScatterPoint> points) {
     const radius = 6.0;
 
-    for (final p in widget.data.points) {
+    for (final p in points) {
       final mapped = widget.mapper.map(p.x, p.y);
       if ((mapped - pos).distance <= radius) {
         return p.rowIndex;

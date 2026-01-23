@@ -18,6 +18,8 @@ class StripPlotPainter extends CustomPainter {
   late final double _minV;
   late final double _maxV;
   late final List<double> _jitters;
+  late final Map<String, int> _categoryIndexMap;
+
 
   StripPlotPainter({
     required this.rows,
@@ -46,6 +48,11 @@ class StripPlotPainter extends CustomPainter {
     
     // Получаем кэшированные jitters
     _jitters = controller.getJitters(rows.length, seed: 42);
+
+    _categoryIndexMap = {
+      for (var i = 0; i < categories.length; i++)
+        categories[i]: i
+    };
   }
 
   @override
@@ -59,8 +66,8 @@ class StripPlotPainter extends CustomPainter {
 
       if (cat is! String || numValue is! num) continue;
 
-      final catIndex = categories.indexOf(cat);
-      if (catIndex == -1) continue;
+      final catIndex = _categoryIndexMap[cat];
+      if (catIndex == null) continue;
 
       // Используем предварительно рассчитанный jitter
       final jitter = _jitters[i];
