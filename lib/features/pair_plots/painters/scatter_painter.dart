@@ -1,7 +1,5 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:lab2_kc_house/features/pair_plots/plot_mapper.dart';
-import 'package:lab2_kc_house/features/pair_plots/scales/categorical_color_scale.dart';
+import 'package:lab2_kc_house/features/pair_plots/utils/plot_mapper.dart';
 import '../data/scatter_data.dart';
 
 /// Отрисовщик диаграммы рассеяния.

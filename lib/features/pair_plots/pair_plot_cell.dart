@@ -1,96 +1,205 @@
 import 'package:flutter/material.dart';
-
 import '../../dataset/dataset.dart';
 import '../../dataset/field_descriptor.dart';
 import 'data/pair_plot_data_builder.dart';
 import 'data/scatter_data.dart';
+import 'hoverable_scatter_cell.dart';
+import 'layout/plot_layout.dart';
 import 'layout/scatter_layout.dart';
-import 'painters/scatter_painter.dart';
+import 'painters/histogram_painter.dart';
+import 'painters/categorical_histogram_painter.dart';
+import 'painters/strip_plot_painter.dart';
 import 'pair_plot_config.dart';
-import 'plot_mapper.dart';
-import 'scales/categorical_color_scale.dart';
+import 'pair_plot_controller.dart';
+import 'utils/plot_mapper.dart';
 
 class PairPlotCell extends StatelessWidget {
   final Dataset dataset;
   final FieldDescriptor x;
   final FieldDescriptor y;
   final PairPlotConfig config;
+  final PairPlotController controller;
+  final bool isDiagonal;
+  final bool showXAxis;
+  final bool showYAxis;
 
   const PairPlotCell({
+    super.key,
     required this.dataset,
     required this.x,
     required this.y,
     required this.config,
+    required this.controller,
+    this.isDiagonal = false,
+    this.showXAxis = false,
+    this.showYAxis = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    //  Строим color scale, если есть hue
-    final colorScale = _buildColorScale();
-
-    //  Готовим scatter data
-    final scatterData = PairPlotDataBuilder.buildScatter(
-      dataset: dataset,
-      x: x,
-      y: y,
-      hue: config.hue,
-      colorScale: colorScale,
-      computeCorrelation: config.style.showCorrelation,
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: isDiagonal
+          ? _buildDiagonalPlot()
+          : _buildScatterPlot(),
     );
+  }
 
-    if (scatterData.points.isEmpty) {
-      return const SizedBox.shrink();
+  Widget _buildDiagonalPlot() {
+    if (x.type == FieldType.categorical) {
+      return _buildCategoricalHistogram();
+    }
+
+    if (!config.style.showHistDiagonal) {
+      return _empty('—');
     }
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        final values = _numericValues(x);
+        if (values.isEmpty) return _empty('Нет данных');
+
+        return CustomPaint(
+          painter: HistogramPainter(
+            values: values,
+            label: x.label,
+          ),
+          size: constraints.biggest,
+        );
+      },
+    );
+  }
+
+  Widget _buildCategoricalHistogram() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final values = dataset.rows
+            .map((r) => r[x.key])
+            .whereType<String>()
+            .toList();
+
+        if (values.isEmpty) return _empty('Нет данных');
+
+        return CustomPaint(
+          painter: CategoricalHistogramPainter(
+            values: values,
+            colorScale: config.colorScale,
+          ),
+          size: constraints.biggest,
+        );
+      },
+    );
+  }
+
+  Widget _buildScatterPlot() {
+    if (x.type == FieldType.categorical && y.type == FieldType.categorical) {
+      return _empty('N/A');
+    }
+
+    if (x.type == FieldType.categorical || y.type == FieldType.categorical) {
+      return _buildCategoricalNumericPlot();
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final scatterData = PairPlotDataBuilder.buildScatter(
+          dataset: dataset,
+          x: x,
+          y: y,
+          hue: config.hue,
+          colorScale: config.colorScale,
+          computeCorrelation: config.style.showCorrelation,
+        );
+
+        if (scatterData.points.isEmpty) {
+          return _empty('Нет данных');
+        }
+
         final layout = _buildLayout(scatterData);
+        final plotLayout = PlotLayout();
+        final plotRect = plotLayout.plotRect(constraints.biggest);
 
         final mapper = PlotMapper(
-          plotRect: Rect.fromLTWH(
-            8,
-            8,
-            constraints.maxWidth - 16,
-            constraints.maxHeight - 16,
-          ),
+          plotRect: plotRect,
           xMin: layout.xMin,
           xMax: layout.xMax,
           yMin: layout.yMin,
           yMax: layout.yMax,
         );
 
-        return CustomPaint(
-          painter: ScatterPainter(
-            data: scatterData,
-            mapper: mapper,
-            dotSize: config.style.dotSize,
-            alpha: config.style.alpha,
-            showCorrelation: config.style.showCorrelation,
-          ),
+        return HoverableScatterCell(
+          data: scatterData,
+          mapper: mapper,
+          x: x,
+          y: y,
+          style: config.style,
+          colorScale: config.colorScale,
+          showXAxis: showXAxis,
+          showYAxis: showYAxis,
+          plotLayout: plotLayout,
+          controller: controller,
         );
       },
     );
   }
 
-  CategoricalColorScale? _buildColorScale() {
-    final hue = config.hue;
-    final palette = config.palette;
+  Widget _buildCategoricalNumericPlot() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isXCat = x.type == FieldType.categorical;
+        final catField = isXCat ? x : y;
+        final numField = isXCat ? y : x;
 
-    if (hue == null || palette == null) return null;
+        final rows = dataset.rows;
+        final categories = rows
+            .map((r) => r[catField.key])
+            .whereType<String>()
+            .toSet()
+            .toList();
 
-    final values = dataset.rows
-        .map((row) => row[hue.key])
-        .where((v) => v != null)
-        .map((v) => hue.parse(v))
-        .whereType<String>()
-        .toList();
+        if (categories.isEmpty) return _empty('Нет данных');
 
-    if (values.isEmpty) return null;
+        final plotRect = PlotLayout().plotRect(constraints.biggest);
 
-    return CategoricalColorScale.fromData(
-      values: values,
-      palette: palette,
+        return CustomPaint(
+          painter: StripPlotPainter(
+            rows: rows,
+            catField: catField,
+            numField: numField,
+            categories: categories,
+            plotRect: plotRect,
+            colorScale: config.colorScale,
+            isVertical: isXCat,
+          ),
+          size: constraints.biggest,
+        );
+      },
     );
+  }
+
+  Widget _empty(String text) {
+    return Center(
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 10,
+          color: Colors.grey,
+        ),
+      ),
+    );
+  }
+
+  List<double> _numericValues(FieldDescriptor field) {
+    // Здесь нужна реализация получения числовых значений
+    // Пока используем временную реализацию:
+    return dataset.rows
+        .map((r) => r[field.key])
+        .whereType<num>()
+        .map((e) => e.toDouble())
+        .toList();
   }
 
   ScatterLayout _buildLayout(ScatterData data) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lab2_kc_house/features/pair_plots/pair_plot_style.dart';
+import 'package:lab2_kc_house/features/pair_plots/scales/categorical_color_scale.dart';
 
 import '../../dataset/dataset.dart';
 import '../../dataset/field_descriptor.dart';
@@ -14,12 +15,21 @@ import '../../dataset/field_descriptor.dart';
 /// {@endtemplate}
 class PairPlotConfig{
   /// {@macro pair_plot_config}
-  const PairPlotConfig({required this.dataset, required this.style, required this.fields, required this.hue, required this.palette});
+  const PairPlotConfig({
+    required this.dataset, 
+    required this.style, 
+    required this.fields, 
+    this.hue,
+    this.palette,
+    this.colorScale,
+  });
 
   final Dataset dataset;
 
   final PairPlotStyle style;
   
+  final CategoricalColorScale? colorScale;
+
   /// Поля, используемые для построения матрицы диаграмм.
   final List<FieldDescriptor> fields;
 

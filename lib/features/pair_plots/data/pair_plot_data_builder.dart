@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../dataset/dataset.dart';
 import '../../../dataset/field_descriptor.dart';
 import '../scales/categorical_color_scale.dart';
-import '../statistics_utils.dart';
+import '../utils/statistics_utils.dart';
 import 'scatter_data.dart';
 
 class PairPlotDataBuilder {
@@ -51,7 +51,7 @@ class PairPlotDataBuilder {
     }
 
     final correlation = (computeCorrelation && xs.length > 2)
-        ? StatisticsUtils.pearson(xs, ys)
+        ? StatisticsUtils.pearsonCorrelation(xs, ys)
         : null;
 
     return ScatterData(

@@ -4,8 +4,10 @@ import 'dataset/csv_data_source.dart';
 import 'dataset/dataset.dart';
 import 'dataset/field_descriptor.dart';
 
+import 'features/pair_plots/pair_plot.dart';
 import 'features/pair_plots/pair_plot_config.dart';
-import 'features/pair_plots/pair_plot_widget.dart';
+import 'features/pair_plots/pair_plot_controller.dart';
+import 'features/pair_plots/scales/categorical_color_scale.dart';
 
 
 Future<void> main() async {
@@ -29,8 +31,21 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  late final PairPlotController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = PairPlotController();
+  }
 
   Future<Dataset> _loadDataset() {
       final source = CsvDataSource(
@@ -69,10 +84,14 @@ class HomeScreen extends StatelessWidget {
           // for (final f in dataset.fields) {
           //   debugPrint('${f.key}: ${f.type} [${f.min}, ${f.max}]');
           // }
-          return SingleChildScrollView(
-            child: PairPlot(
+          final colorScale = CategoricalColorScale.fromData(
+            values: dataset.rows.map((r) => r['Heart Attack Risk']).where((v) => v != null).map((v) => v.toString()).toList(),
+            palette: ColorPalette.categorical,
+          );
+          return PairPlot(
               dataset: dataset,
               config: PairPlotConfig(
+                colorScale: colorScale,
                 dataset: dataset,
                 fields: dataset.fields.where((f) => f.type != FieldType.categorical).toList(),
                 style: const PairPlotStyle(
@@ -83,10 +102,11 @@ class HomeScreen extends StatelessWidget {
                   maxPoints: 100,
                 ),
                 palette: ColorPalette.categorical,
+                
                 hue: FieldDescriptor.binary(key: 'Heart Attack Risk', label: 'Риск сердечного приступа'),
               ),
-            ),
-          );
+              controller: controller,
+            );
         },
       ),
     );

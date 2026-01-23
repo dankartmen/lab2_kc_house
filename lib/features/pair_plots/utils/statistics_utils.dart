@@ -1,7 +1,7 @@
 import 'dart:math';
 
 class StatisticsUtils {
-  static double pearson(
+  static double pearsonCorrelation(
     List<double> x,
     List<double> y, {
     int? sample,
