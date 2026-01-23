@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:lab2_kc_house/features/pair_plots/scales/categorical_color_scale.dart';
 
@@ -20,6 +22,11 @@ class PairPlotController extends ChangeNotifier {
   final Map<String, List<double>> _numericValuesCache = {};
   final Map<String, List<String>> _categoricalValuesCache = {};
   final Map<String, List<String>> _uniqueCategoriesCache = {};
+  final Map<String, List<double>> _jitterCache = {};
+
+  // Кэш для min/max значений
+  final Map<String, double> _minValueCache = {};
+  final Map<String, double> _maxValueCache = {};
 
   int? get hoveredIndex => _hoveredIndex;
   Set<String> get activeCategories => _activeCategories;
@@ -69,6 +76,43 @@ class PairPlotController extends ChangeNotifier {
     return _numericValuesCache[key]!;
   }
 
+
+  /// Получить минимальное значение для поля
+  double getMinValue(FieldDescriptor field) {
+    final key = field.key;
+    if (!_minValueCache.containsKey(key)) {
+      final values = getNumericValues(field);
+      _minValueCache[key] = values.isNotEmpty 
+          ? values.reduce((a, b) => a < b ? a : b)
+          : 0.0;
+    }
+    return _minValueCache[key]!;
+  }
+
+  /// Получить максимальное значение для поля
+  double getMaxValue(FieldDescriptor field) {
+    final key = field.key;
+    if (!_maxValueCache.containsKey(key)) {
+      final values = getNumericValues(field);
+      _maxValueCache[key] = values.isNotEmpty 
+          ? values.reduce((a, b) => a > b ? a : b)
+          : 0.0;
+    }
+    return _maxValueCache[key]!;
+  }
+
+  /// Получить предварительно рассчитанные jitter значения
+  List<double> getJitters(int count, {int seed = 42}) {
+    final key = 'jitters-$count-$seed';
+    if (!_jitterCache.containsKey(key)) {
+      final rnd = Random(seed);
+      _jitterCache[key] = List.generate(count, 
+        (_) => (rnd.nextDouble() - 0.5) * 0.6
+      );
+    }
+    return _jitterCache[key]!;
+  }
+  
   /// Получить кэшированные категориальные значения для поля
   List<String> getCategoricalValues(FieldDescriptor field) {
     final key = field.key;
@@ -98,9 +142,18 @@ class PairPlotController extends ChangeNotifier {
     FieldDescriptor? hue,
     bool computeCorrelation = true,
   }) {
-    final key = '${x.key}-${y.key}-${hue?.key ?? 'no-hue'}';
+    final key = '${x.key}-${y.key}-${hue?.key ?? 'no-hue'}-${computeCorrelation ? '1' : '0'}';
     
     if (!_scatterCache.containsKey(key)) {
+      // Используем кэшированные значения для оптимизации
+      final cachedXValues = getNumericValues(x);
+      final cachedYValues = getNumericValues(y);
+      List<String?>? cachedHueValues;
+
+      if (hue != null) {
+        final hueValues = getCategoricalValues(hue);
+        cachedHueValues = hueValues.map((v) => hue.parseCategory(v)).toList();
+      }
       _scatterCache[key] = PairPlotDataBuilder.buildScatter(
         dataset: _dataset,
         x: x,
@@ -108,10 +161,27 @@ class PairPlotController extends ChangeNotifier {
         hue: hue,
         colorScale: _colorScale,
         computeCorrelation: computeCorrelation,
+        cachedXValues: cachedXValues,
+        cachedYValues: cachedYValues,
+        cachedHueValues: cachedHueValues,
       );
     }
     
     return _scatterCache[key]!;
+  }
+
+  /// Получить отфильтрованные точки для отрисовки
+  List<ScatterPoint> getFilteredPoints(ScatterData data) {
+    if (_activeCategories.isEmpty) return data.points;
+    
+    // Кэшируем отфильтрованные точки
+    final key = '${data.hashCode}-${_activeCategories.hashCode}';
+    // Поскольку это дешевая операция, можно не кэшировать, но если нужно:
+    // if (!_filteredPointsCache.containsKey(key)) { ... }
+    
+    return data.points.where((p) => 
+      p.category == null || _activeCategories.contains(p.category)
+    ).toList();
   }
 
   /// Вспомогательный метод для получения уникальных категорий
@@ -159,6 +229,9 @@ class PairPlotController extends ChangeNotifier {
     _numericValuesCache.clear();
     _categoricalValuesCache.clear();
     _uniqueCategoriesCache.clear();
+    _jitterCache.clear();
+    _minValueCache.clear();
+    _maxValueCache.clear();
     notifyListeners();
   }
 }

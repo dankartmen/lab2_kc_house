@@ -4,7 +4,6 @@ import 'pair_plot_config.dart';
 import 'pair_plot_controller.dart';
 import 'pair_plot_matrix.dart';
 import 'pair_plot_legend.dart';
-import 'scales/categorical_color_scale.dart';
 
 class PairPlot extends StatefulWidget {
   final Dataset dataset;

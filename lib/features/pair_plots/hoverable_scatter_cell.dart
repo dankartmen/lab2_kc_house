@@ -20,6 +20,7 @@ class HoverableScatterCell extends StatefulWidget {
   final bool showXAxis;
   final PlotLayout plotLayout;
   final PairPlotController controller;
+  final List<ScatterPoint>? filteredPoints;
 
   const HoverableScatterCell({
     super.key,
@@ -33,6 +34,7 @@ class HoverableScatterCell extends StatefulWidget {
     required this.showXAxis,
     required this.plotLayout,
     required this.controller, 
+    this.filteredPoints,
   });
 
   @override
@@ -69,6 +71,7 @@ class _HoverableScatterCellState extends State<HoverableScatterCell> {
               showCorrelation: widget.style.showCorrelation,
               hoveredIndex: hoveredIndex,
               activeCategories: widget.controller.activeCategories,
+              filteredPoints: widget.filteredPoints,
             ),
             size: Size.infinite,
           ),

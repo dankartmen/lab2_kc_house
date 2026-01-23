@@ -11,6 +11,7 @@ class ScatterPainter extends CustomPainter {
   final double alpha;
   final int? hoveredIndex;
   final Set<String> activeCategories;
+  final List<ScatterPoint>? filteredPoints;
 
   ScatterPainter({
     required this.data,
@@ -20,21 +21,16 @@ class ScatterPainter extends CustomPainter {
     required this.alpha,
     this.hoveredIndex,
     this.activeCategories = const {},
+    this.filteredPoints,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    for (final p in data.points) {
+    final pointsToDraw = filteredPoints ?? _filterPoints(data.points);
+    for (final p in pointsToDraw) {
       final isHovered = hoveredIndex == p.rowIndex;
-      final isActive = activeCategories.isEmpty ||
-          (p.category != null &&
-              activeCategories.contains(p.category));
 
-      final a = isHovered
-          ? 1.0
-          : isActive
-              ? alpha
-              : 0.1;
+      final a = isHovered ? 1.0 : alpha;
 
       final paint = Paint()
         ..color = p.color.withAlpha((a * 255).toInt())
@@ -50,6 +46,15 @@ class ScatterPainter extends CustomPainter {
     if (showCorrelation && data.correlation != null) {
       _drawCorrelation(canvas);
     }
+  }
+
+  /// Фильтрация точек по активным категориям
+  List<ScatterPoint> _filterPoints(List<ScatterPoint> points) {
+    if (activeCategories.isEmpty) return points;
+    
+    return points.where((p) => 
+      p.category == null || activeCategories.contains(p.category)
+    ).toList();
   }
 
   void _drawCorrelation(Canvas canvas) {
@@ -68,5 +73,6 @@ class ScatterPainter extends CustomPainter {
   bool shouldRepaint(covariant ScatterPainter old) =>
       old.data != data ||
       old.hoveredIndex != hoveredIndex ||
-      old.activeCategories != activeCategories;
+      old.activeCategories != activeCategories ||
+      old.filteredPoints != filteredPoints;
 }

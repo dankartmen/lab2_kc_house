@@ -106,6 +106,9 @@ class PairPlotCell extends StatelessWidget {
           return _empty('Нет данных');
         }
 
+        // Получаем отфильтрованные точки из контроллера
+        final filteredPoints = controller.getFilteredPoints(scatterData);
+
         final layout = _buildLayout(scatterData);
         final plotLayout = PlotLayout();
         final plotRect = plotLayout.plotRect(constraints.biggest);
@@ -129,6 +132,7 @@ class PairPlotCell extends StatelessWidget {
           showYAxis: showYAxis,
           plotLayout: plotLayout,
           controller: controller,
+          filteredPoints: filteredPoints,
         );
       },
     );
@@ -157,6 +161,7 @@ class PairPlotCell extends StatelessWidget {
             plotRect: plotRect,
             colorScale: config.colorScale,
             isVertical: isXCat,
+            controller: controller
           ),
           size: constraints.biggest,
         );

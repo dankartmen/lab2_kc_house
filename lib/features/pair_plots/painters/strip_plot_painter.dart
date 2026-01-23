@@ -1,5 +1,5 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:lab2_kc_house/features/pair_plots/pair_plot_controller.dart';
 import '../../../dataset/field_descriptor.dart';
 import '../scales/categorical_color_scale.dart';
 
@@ -11,12 +11,13 @@ class StripPlotPainter extends CustomPainter {
   final Rect plotRect;
   final bool isVertical;
   final CategoricalColorScale? colorScale;
+  final PairPlotController controller;
 
-  /// Кешированные числовые значения и их мин/макс
-  late final List<double> _cachedNumericValues;
-  late final double _cachedMinV;
-  late final double _cachedMaxV;
-  bool _isCacheInitialized = false;
+  /// Кешированные значения
+  late final List<double> _numericValues;
+  late final double _minV;
+  late final double _maxV;
+  late final List<double> _jitters;
 
   StripPlotPainter({
     required this.rows,
@@ -25,6 +26,7 @@ class StripPlotPainter extends CustomPainter {
     required this.categories,
     required this.plotRect,
     required this.isVertical,
+    required this.controller,
     this.colorScale,
   }){
     _initializeCache();
@@ -32,30 +34,26 @@ class StripPlotPainter extends CustomPainter {
 
 
   void _initializeCache() {
-    _cachedNumericValues = rows
-        .map((r) => r[numField.key])
-        .whereType<num>()
-        .map((e) => e.toDouble())
-        .toList();
-
-    if (_cachedNumericValues.isNotEmpty) {
-      _cachedMinV = _cachedNumericValues.reduce((a, b) => a < b ? a : b);
-      _cachedMaxV = _cachedNumericValues.reduce((a, b) => a > b ? a : b);
+    // Используем кэшированные значения из контроллера
+    _numericValues = controller.getNumericValues(numField);
+    if (_numericValues.isNotEmpty) {
+      _minV = controller.getMinValue(numField);
+      _maxV = controller.getMaxValue(numField);
     } else {
-      _cachedMinV = 0;
-      _cachedMaxV = 0;
+      _minV = 0.0;
+      _maxV = 0.0;
     }
     
-    _isCacheInitialized = true;
+    // Получаем кэшированные jitters
+    _jitters = controller.getJitters(rows.length, seed: 42);
   }
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (!_isCacheInitialized || _cachedNumericValues.isEmpty) return;
+    if (_numericValues.isEmpty) return;
 
-    final rnd = Random(42);
-
-    for (final row in rows) {
+    for (int i = 0; i < rows.length; i++) {
+      final row = rows[i];
       final cat = row[catField.key];
       final numValue = row[numField.key];
 
@@ -64,17 +62,18 @@ class StripPlotPainter extends CustomPainter {
       final catIndex = categories.indexOf(cat);
       if (catIndex == -1) continue;
 
-      final jitter = (rnd.nextDouble() - 0.5) * 0.6;
+      // Используем предварительно рассчитанный jitter
+      final jitter = _jitters[i];
 
       final dx = isVertical
           ? plotRect.left +
               (catIndex + 0.5 + jitter) / categories.length * plotRect.width
           : plotRect.left +
-              _norm(numValue.toDouble(), _cachedMinV, _cachedMaxV) * plotRect.width;
+              _norm(numValue.toDouble(), _minV, _maxV) * plotRect.width;
 
       final dy = isVertical
           ? plotRect.bottom -
-              _norm(numValue.toDouble(), _cachedMinV, _cachedMaxV) * plotRect.height
+              _norm(numValue.toDouble(), _minV, _maxV) * plotRect.height
           : plotRect.bottom -
               (catIndex + 0.5 + jitter) / categories.length * plotRect.height;
 
@@ -92,5 +91,13 @@ class StripPlotPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant StripPlotPainter oldDelegate) => true;
+  bool shouldRepaint(covariant StripPlotPainter oldDelegate) {
+    return oldDelegate.rows != rows ||
+           oldDelegate.catField != catField ||
+           oldDelegate.numField != numField ||
+           oldDelegate.categories != categories ||
+           oldDelegate.plotRect != plotRect ||
+           oldDelegate.isVertical != isVertical ||
+           oldDelegate.colorScale != colorScale;
+  }
 }

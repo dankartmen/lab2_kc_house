@@ -49,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<Dataset> _loadDataset() {
       final source = CsvDataSource(
-        path: 'assets/heart_attack_prediction_dataset.csv',
+        path: 'assets/test.csv',
       );
 
       return source.load();
@@ -85,7 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
           //   debugPrint('${f.key}: ${f.type} [${f.min}, ${f.max}]');
           // }
           final colorScale = CategoricalColorScale.fromData(
-            values: dataset.rows.map((r) => r['Heart Attack Risk']).where((v) => v != null).map((v) => v.toString()).toList(),
+            values: dataset.rows.map((r) => r['sex']).where((v) => v != null).map((v) => v.toString()).toList(),
             palette: ColorPalette.categorical,
           );
           return PairPlot(
@@ -103,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 palette: ColorPalette.categorical,
                 
-                hue: FieldDescriptor.binary(key: 'Heart Attack Risk', label: 'Риск сердечного приступа'),
+                hue: FieldDescriptor.binary(key: 'sex', label: 'Пол'),
               ),
               controller: controller,
             );

@@ -16,7 +16,8 @@ class PairPlotDataBuilder {
     bool computeCorrelation = true,
     List<double>? cachedXValues,
     List<double>? cachedYValues,
-    List<String>? cachedHueValues,
+    List<String?>? cachedHueValues,
+    List<double>? cachedJitter,
   }) {
     final points = <ScatterPoint>[];
     final xs = <double>[];
@@ -35,9 +36,9 @@ class PairPlotDataBuilder {
         .map((e) => e.toDouble())
         .toList();
     
-    List<String?>? hueValues;
-    if (hue != null) {
-      hueValues = cachedHueValues ?? dataset.rows
+    List<String?>? hueValues = cachedHueValues;
+    if (hue != null && hueValues == null) {
+      hueValues = dataset.rows
           .map((r) => r[hue.key])
           .map((v) => hue.parseCategory(v))
           .toList();
