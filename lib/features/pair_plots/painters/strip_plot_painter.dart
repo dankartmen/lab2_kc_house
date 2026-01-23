@@ -12,6 +12,12 @@ class StripPlotPainter extends CustomPainter {
   final bool isVertical;
   final CategoricalColorScale? colorScale;
 
+  /// Кешированные числовые значения и их мин/макс
+  late final List<double> _cachedNumericValues;
+  late final double _cachedMinV;
+  late final double _cachedMaxV;
+  bool _isCacheInitialized = false;
+
   StripPlotPainter({
     required this.rows,
     required this.catField,
@@ -20,22 +26,34 @@ class StripPlotPainter extends CustomPainter {
     required this.plotRect,
     required this.isVertical,
     this.colorScale,
-  });
+  }){
+    _initializeCache();
+  }
 
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rnd = Random(42);
 
-    final nums = rows
+  void _initializeCache() {
+    _cachedNumericValues = rows
         .map((r) => r[numField.key])
         .whereType<num>()
         .map((e) => e.toDouble())
         .toList();
 
-    if (nums.isEmpty) return;
+    if (_cachedNumericValues.isNotEmpty) {
+      _cachedMinV = _cachedNumericValues.reduce((a, b) => a < b ? a : b);
+      _cachedMaxV = _cachedNumericValues.reduce((a, b) => a > b ? a : b);
+    } else {
+      _cachedMinV = 0;
+      _cachedMaxV = 0;
+    }
+    
+    _isCacheInitialized = true;
+  }
 
-    final minV = nums.reduce((a, b) => a < b ? a : b);
-    final maxV = nums.reduce((a, b) => a > b ? a : b);
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (!_isCacheInitialized || _cachedNumericValues.isEmpty) return;
+
+    final rnd = Random(42);
 
     for (final row in rows) {
       final cat = row[catField.key];
@@ -52,11 +70,11 @@ class StripPlotPainter extends CustomPainter {
           ? plotRect.left +
               (catIndex + 0.5 + jitter) / categories.length * plotRect.width
           : plotRect.left +
-              _norm(numValue.toDouble(), minV, maxV) * plotRect.width;
+              _norm(numValue.toDouble(), _cachedMinV, _cachedMaxV) * plotRect.width;
 
       final dy = isVertical
           ? plotRect.bottom -
-              _norm(numValue.toDouble(), minV, maxV) * plotRect.height
+              _norm(numValue.toDouble(), _cachedMinV, _cachedMaxV) * plotRect.height
           : plotRect.bottom -
               (catIndex + 0.5 + jitter) / categories.length * plotRect.height;
 

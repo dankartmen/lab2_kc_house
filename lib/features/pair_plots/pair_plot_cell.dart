@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../dataset/dataset.dart';
 import '../../dataset/field_descriptor.dart';
-import 'data/pair_plot_data_builder.dart';
 import 'data/scatter_data.dart';
 import 'hoverable_scatter_cell.dart';
 import 'layout/plot_layout.dart';
@@ -59,7 +58,7 @@ class PairPlotCell extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final values = _numericValues(x);
+        final values = controller.getNumericValues(x);
         if (values.isEmpty) return _empty('Нет данных');
 
         return CustomPaint(
@@ -76,11 +75,7 @@ class PairPlotCell extends StatelessWidget {
   Widget _buildCategoricalHistogram() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final values = dataset.rows
-            .map((r) => r[x.key])
-            .whereType<String>()
-            .toList();
-
+        final values = controller.getCategoricalValues(x);
         if (values.isEmpty) return _empty('Нет данных');
 
         return CustomPaint(
@@ -105,14 +100,7 @@ class PairPlotCell extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final scatterData = PairPlotDataBuilder.buildScatter(
-          dataset: dataset,
-          x: x,
-          y: y,
-          hue: config.hue,
-          colorScale: config.colorScale,
-          computeCorrelation: config.style.showCorrelation,
-        );
+        final scatterData = controller.getScatterData(x, y, hue: config.hue, computeCorrelation: config.style.showCorrelation);
 
         if (scatterData.points.isEmpty) {
           return _empty('Нет данных');
@@ -154,11 +142,7 @@ class PairPlotCell extends StatelessWidget {
         final numField = isXCat ? y : x;
 
         final rows = dataset.rows;
-        final categories = rows
-            .map((r) => r[catField.key])
-            .whereType<String>()
-            .toSet()
-            .toList();
+        final categories = controller.getUniqueCategories(catField);
 
         if (categories.isEmpty) return _empty('Нет данных');
 
@@ -190,16 +174,6 @@ class PairPlotCell extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  List<double> _numericValues(FieldDescriptor field) {
-    // Здесь нужна реализация получения числовых значений
-    // Пока используем временную реализацию:
-    return dataset.rows
-        .map((r) => r[field.key])
-        .whereType<num>()
-        .map((e) => e.toDouble())
-        .toList();
   }
 
   ScatterLayout _buildLayout(ScatterData data) {

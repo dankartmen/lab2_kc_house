@@ -26,10 +26,13 @@ class PairPlot extends StatefulWidget {
 
 class _PairPlotState extends State<PairPlot> {
   Map<String, Color>? _legend;
+  late PairPlotController _controller;
 
   @override
   void initState() {
     super.initState();
+    _controller = widget.controller;
+    _initializeController();
     _buildLegend();
   }
 
@@ -42,6 +45,15 @@ class _PairPlotState extends State<PairPlot> {
     }
   }
 
+
+  void _initializeController() {
+    _controller.initialize(
+      widget.dataset,
+      widget.config.hue,
+      widget.config.palette,
+    );
+  }
+
   void _buildLegend() {
     final hueField = widget.config.hue;
     if (hueField == null) {
@@ -49,33 +61,18 @@ class _PairPlotState extends State<PairPlot> {
       return;
     }
 
-    final hueValues = widget.dataset.rows
-        .map((row) => row[hueField.key])
-        .where((v) => v != null)
-        .map((v) => hueField.parseCategory(v))
-        .whereType<String>()
-        .toSet()
-        .toList();
-
-    if (hueValues.isEmpty) {
+    final colorScale = _controller.colorScale;
+    if (colorScale != null) {
+      _legend = colorScale.legend;
+    } else {
       _legend = null;
-      return;
     }
-
-    final colorScale = CategoricalColorScale.fromData(
-      values: hueValues,
-      palette: widget.config.palette ?? ColorPalette.defaultPalette,
-      sort: (a, b) => a.compareTo(b),
-      maxCategories: 6,
-    );
-
-    _legend = colorScale.legend;
   }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: widget.controller,
+      animation: _controller,
       builder: (context, _) {
         return Card(
           margin: const EdgeInsets.all(16),
@@ -88,7 +85,7 @@ class _PairPlotState extends State<PairPlot> {
                   const SizedBox(height: 8),
                   PairPlotLegend(
                     legend: _legend!,
-                    controller: widget.controller,
+                    controller: _controller,
                   ),
                   const SizedBox(height: 12),
                 ],
@@ -100,7 +97,7 @@ class _PairPlotState extends State<PairPlot> {
                       child: PairPlotMatrix(
                         dataset: widget.dataset,
                         config: widget.config,
-                        controller: widget.controller,
+                        controller: _controller,
                         cellSize: widget.cellSize,
                       ),
                     ),
