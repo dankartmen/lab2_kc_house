@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:lab2_kc_house/features/pair_plots/pair_plot_style.dart';
 import 'dataset/csv_data_source.dart';
 import 'dataset/dataset.dart';
 import 'dataset/field_descriptor.dart';
-
 import 'features/pair_plots/pair_plot.dart';
 import 'features/pair_plots/pair_plot_config.dart';
 import 'features/pair_plots/pair_plot_controller.dart';
-import 'features/pair_plots/scales/categorical_color_scale.dart';
-
+import 'features/bi_model/bi_model.dart';
+import 'features/pair_plots/pair_plot_style.dart';
 
 Future<void> main() async {
   runApp(const MyApp());
@@ -39,29 +37,25 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late final PairPlotController controller;
+  late PairPlotController controller;
 
   @override
   void initState() {
     super.initState();
-    controller = PairPlotController();
   }
 
   Future<Dataset> _loadDataset() {
-      final source = CsvDataSource(
-        path: 'assets/test.csv',
-      );
-
-      return source.load();
-    }
+    final source = CsvDataSource(
+      path: 'assets/heart_attack_prediction_dataset.csv',
+    );
+    return source.load();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Анализатор данных'),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
       ),
       body: FutureBuilder<Dataset>(
         future: _loadDataset(),
@@ -81,32 +75,40 @@ class _HomeScreenState extends State<HomeScreen> {
           }
 
           final dataset = snapshot.data!;
-          // for (final f in dataset.fields) {
-          //   debugPrint('${f.key}: ${f.type} [${f.min}, ${f.max}]');
-          // }
-          final colorScale = CategoricalColorScale.fromData(
-            values: dataset.rows.map((r) => r['sex']).where((v) => v != null).map((v) => v.toString()).toList(),
-            palette: ColorPalette.categorical,
+
+          // Hue для цвета
+          final hueField = FieldDescriptor.categorical(
+            key: 'Heart Attack Risk',
+            label: 'Риск сердечного приступа',
           );
+
+          // Инициализация контроллера с BIModel
+          final model = BIModel(dataset);
+          controller = PairPlotController(model);
+          controller.initialize(dataset, hueField, ColorPalette.categorical);
+
+          // Поля для визуализации
+          final numericFields =
+              dataset.fields.where((f) => f.type == FieldType.continuous).toList();
+
           return PairPlot(
+            dataset: dataset,
+            config: PairPlotConfig(
               dataset: dataset,
-              config: PairPlotConfig(
-                colorScale: colorScale,
-                dataset: dataset,
-                fields: dataset.fields.where((f) => f.type != FieldType.categorical).toList(),
-                style: const PairPlotStyle(
-                  dotSize: 4.0,
-                  alpha: 0.7,
-                  showHistDiagonal: true,
-                  showCorrelation: true,
-                  maxPoints: 100,
-                ),
-                palette: ColorPalette.categorical,
-                
-                hue: FieldDescriptor.binary(key: 'sex', label: 'Пол'),
+              fields: numericFields,
+              hue: hueField,
+              palette: ColorPalette.categorical,
+              colorScale: controller.colorScale,
+              style: const PairPlotStyle(
+                dotSize: 4.0,
+                alpha: 0.7,
+                showHistDiagonal: true,
+                showCorrelation: true,
+                maxPoints: 100,
               ),
-              controller: controller,
-            );
+            ),
+            controller: controller,
+          );
         },
       ),
     );

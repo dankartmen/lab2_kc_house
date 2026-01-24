@@ -42,22 +42,16 @@ class HoverableScatterCell extends StatefulWidget {
 }
 
 class _HoverableScatterCellState extends State<HoverableScatterCell> {
-  int? hoveredIndex;
 
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
       onHover: (event) {
-        final local = event.localPosition;
-        final hit = _hitTest(local, widget.filteredPoints);
-        if (hit != hoveredIndex) {
-          widget.controller.setHoveredIndex(hit);
-          setState(() => hoveredIndex = hit);
-        }
+        final hit = _hitTest(event.localPosition, widget.filteredPoints);
+          widget.controller.model.setHoveredRow(hit);
       },
       onExit: (_) {
-        setState(() => hoveredIndex = null);
-        widget.controller.setHoveredIndex(null);
+        widget.controller.model.setHoveredRow(null);
       },
       child: Stack(
         children: [
@@ -69,7 +63,7 @@ class _HoverableScatterCellState extends State<HoverableScatterCell> {
               dotSize: widget.style.dotSize,
               alpha: widget.style.alpha,
               showCorrelation: widget.style.showCorrelation,
-              hoveredIndex: hoveredIndex,
+              hoveredIndex: widget.controller.model.hoveredRow,
               pointsToDraw: widget.filteredPoints,
             ),
             size: Size.infinite,
@@ -109,8 +103,8 @@ class _HoverableScatterCellState extends State<HoverableScatterCell> {
               size: Size.infinite,
             ),
 
-          if (hoveredIndex != null)
-            _buildTooltip(context, hoveredIndex!),
+          if (widget.controller.model.hoveredRow != null)
+            _buildTooltip(context, widget.controller.model.hoveredRow!),
         ],
       ),
     );

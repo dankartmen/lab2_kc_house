@@ -84,7 +84,8 @@ class _PairPlotState extends State<PairPlot> {
                   const SizedBox(height: 8),
                   PairPlotLegend(
                     legend: _legend!,
-                    controller: _controller,
+                    model: widget.controller.model,
+                    fieldKey: widget.config.hue!.key,
                   ),
                   const SizedBox(height: 12),
                 ],

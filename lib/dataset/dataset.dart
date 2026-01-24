@@ -9,6 +9,8 @@ class Dataset {
     required this.rows,
   });
 
+  Map<String, dynamic> rowAt(int i) => rows[i];
+
   List<dynamic> column(String key) =>
       rows.map((row) => row[key]).toList();
 }

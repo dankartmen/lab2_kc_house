@@ -59,8 +59,13 @@ class StripPlotPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (_numericValues.isEmpty) return;
 
-    for (int i = 0; i < rows.length; i++) {
-      final row = rows[i];
+    // Отфильтровываем строки по активным категориям из BIModel
+    final visibleRows = rows.where((row) {
+      final catValue = catField.parseCategory(row[catField.key]);
+      return controller.model.isCategoryActive(catField.key, catValue);
+    }).toList();
+    for (int i = 0; i < visibleRows.length; i++) {
+      final row = visibleRows[i];
       final cat = row[catField.key];
       final numValue = row[numField.key];
 

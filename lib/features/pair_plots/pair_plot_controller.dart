@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:lab2_kc_house/features/bi_model/bi_model.dart';
 import 'package:lab2_kc_house/features/pair_plots/scales/categorical_color_scale.dart';
 
 import '../../dataset/dataset.dart';
@@ -12,10 +13,10 @@ import 'pair_plot_config.dart';
 /// Контроллер для управления состоянием PairPlot.
 /// Хранит состояние фильтров и ховеров, уведомляет подписчиков об изменениях.
 class PairPlotController extends ChangeNotifier {
-  int? _hoveredIndex;
-  final Set<String> _activeCategories = {};
+  late BIModel model;
   late Dataset _dataset;
   CategoricalColorScale? _colorScale;
+  late List<int> _visibleRows;
 
   // Кэши данных
   final Map<String, ScatterData> _scatterCache = {};
@@ -28,19 +29,54 @@ class PairPlotController extends ChangeNotifier {
   final Map<String, double> _minValueCache = {};
   final Map<String, double> _maxValueCache = {};
 
-  int? get hoveredIndex => _hoveredIndex;
-  Set<String> get activeCategories => _activeCategories;
+  int? get hoveredIndex => model.hoveredRow;
   Dataset get dataset => _dataset;
   CategoricalColorScale? get colorScale => _colorScale;
 
-
-  /// Метод для установки индекса наведенной точки.
-  void setHoveredIndex(int? index) {
-    if (_hoveredIndex != index) {
-      _hoveredIndex = index;
-      notifyListeners();
-    }
+  PairPlotController(this.model) {
+    _rebuild();
+    model.addListener(_rebuild);
   }
+
+
+  void _rebuild() {
+    _dataset = model.dataset;
+
+    _visibleRows = [];
+    for (int i = 0; i < model.dataset.rows.length; i++) {
+      if (_passesFilters(i)) {
+        _visibleRows.add(i);
+      }
+    }
+
+    invalidateCache();
+  }
+
+  bool _passesFilters(int row) {
+    final r = model.dataset.rows[row];
+
+    // Категориальные фильтры
+    for (final e in model.categoricalFilters.entries) {
+      final activeCategories = e.value;
+      if (activeCategories.isNotEmpty) {
+        final strValue = r[e.key]?.toString();
+        if (strValue == null || !activeCategories.contains(strValue)) {
+          return false;
+        }
+      }
+    }
+
+    // Числовые фильтры
+    for (final e in model.numericFilters.entries) {
+      final v = r[e.key];
+      if (v is! num || v < e.value.start || v > e.value.end) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
 
   /// Инициализация контроллера
   void initialize(Dataset dataset, FieldDescriptor? hue, ColorPalette? palette) {
@@ -118,7 +154,7 @@ class PairPlotController extends ChangeNotifier {
     final key = field.key;
     if (!_categoricalValuesCache.containsKey(key)) {
       _categoricalValuesCache[key] = _dataset.rows
-          .map((r) => r[field.key])
+          .map((r) => r[field.key]?.toString())
           .whereType<String>()
           .toList();
     }
@@ -142,86 +178,68 @@ class PairPlotController extends ChangeNotifier {
     FieldDescriptor? hue,
     bool computeCorrelation = true,
   }) {
-    final key = '${x.key}-${y.key}-${hue?.key ?? 'no-hue'}-${computeCorrelation ? '1' : '0'}';
-    
-    if (!_scatterCache.containsKey(key)) {
-      // Используем кэшированные значения для оптимизации
-      final cachedXValues = getNumericValues(x);
-      final cachedYValues = getNumericValues(y);
-      List<String?>? cachedHueValues;
+    final hueFilterKey = hue != null 
+      ? model.categoriesOf(hue.key).join(',') 
+      : 'no-hue';
 
-      if (hue != null) {
-        final hueValues = getCategoricalValues(hue);
-        cachedHueValues = hueValues.map((v) => hue.parseCategory(v)).toList();
-      }
-      _scatterCache[key] = PairPlotDataBuilder.buildScatter(
-        dataset: _dataset,
-        x: x,
-        y: y,
-        hue: hue,
-        colorScale: _colorScale,
-        computeCorrelation: computeCorrelation,
-        cachedXValues: cachedXValues,
-        cachedYValues: cachedYValues,
-        cachedHueValues: cachedHueValues,
-      );
+    final key = '${x.key}-${y.key}-${hue?.key}-${_visibleRows.hashCode}-$hueFilterKey';
+
+    if (_scatterCache.containsKey(key)) {
+      return _scatterCache[key]!;
     }
-    
-    return _scatterCache[key]!;
+
+    final points = <ScatterPoint>[];
+    final xs = <double>[];
+    final ys = <double>[];
+
+    for (final row in _visibleRows) {
+      final r = model.dataset.rows[row];
+      final xv = r[x.key];
+      final yv = r[y.key];
+
+      if (xv is! num || yv is! num) continue;
+
+      final category = hue?.parseCategory(r[hue.key]);
+
+
+      points.add(
+        ScatterPoint(
+          x: xv.toDouble(),
+          y: yv.toDouble(),
+          rowIndex: row,
+          category: category,
+          color: category != null
+              ? _colorScale?.colorOf(category) ?? Colors.grey
+              : Colors.blue,
+        ),
+      );
+
+      xs.add(xv.toDouble());
+      ys.add(yv.toDouble());
+    }
+
+    final data = ScatterData(
+      points: points,
+      correlation: computeCorrelation
+          ? PairPlotDataBuilder.computeCorrelation(xs,ys)
+          : null,
+    );
+
+    _scatterCache[key] = data;
+    return data;
   }
 
-  /// Получить отфильтрованные точки для отрисовки
-  List<ScatterPoint> getFilteredPoints(ScatterData data) {
-    if (_activeCategories.isEmpty) return data.points;
-    
-    // Кэшируем отфильтрованные точки
-    final key = '${data.hashCode}-${_activeCategories.hashCode}';
-    // Поскольку это дешевая операция, можно не кэшировать, но если нужно:
-    // if (!_filteredPointsCache.containsKey(key)) { ... }
-    
-    return data.points.where((p) => 
-      p.category == null || _activeCategories.contains(p.category)
-    ).toList();
-  }
 
   /// Вспомогательный метод для получения уникальных категорий
   List<String> _getUniqueCategories(FieldDescriptor field) {
     return _dataset.rows
-        .map((row) => row[field.key])
-        .where((v) => v != null)
+        .map((row) => row[field.key]?.toString())
         .map((v) => field.parseCategory(v))
         .whereType<String>()
         .toSet()
         .toList();
   }
-  
-  /// Метод для переключения категории (добавить/удалить из фильтра).
-  void toggleCategory(String category) {
-    if (_activeCategories.contains(category)) {
-      _activeCategories.remove(category);
-    } else {
-      _activeCategories.add(category);
-    }
-    notifyListeners();
-  }
 
-  /// Проверить, активна ли категория (показывается ли на графике).
-  bool isCategoryActive(String? category) {
-    if (category == null) return true;
-    if (_activeCategories.isEmpty) return true;
-    return _activeCategories.contains(category);
-  }
-
-  /// Сбросить все фильтры категорий.
-  void resetFilters() {
-    _activeCategories.clear();
-    notifyListeners();
-  }
-
-  /// Очистить ховер.
-  void clearHover() {
-    setHoveredIndex(null);
-  }
 
   /// Очистить все кэши 
   void invalidateCache() {

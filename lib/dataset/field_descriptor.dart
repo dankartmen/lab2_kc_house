@@ -49,6 +49,10 @@ class FieldDescriptor {
     this.max,
   });
 
+  bool get isNumeric => type == FieldType.continuous || type == FieldType.binary;
+  bool get isCategorical => type == FieldType.categorical || type == FieldType.binary;
+
+
   /// Создаёт числовое (непрерывное) поле
   static FieldDescriptor numeric({String? label, double? min, double? max, required String key}) {
     return FieldDescriptor(

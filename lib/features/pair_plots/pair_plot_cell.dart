@@ -106,8 +106,6 @@ class PairPlotCell extends StatelessWidget {
           return _empty('Нет данных');
         }
 
-        // Получаем отфильтрованные точки из контроллера
-        final filteredPoints = controller.getFilteredPoints(scatterData);
 
         final layout = _buildLayout(scatterData);
         final plotLayout = PlotLayout();
@@ -132,7 +130,7 @@ class PairPlotCell extends StatelessWidget {
           showYAxis: showYAxis,
           plotLayout: plotLayout,
           controller: controller,
-          filteredPoints: filteredPoints,
+          filteredPoints: scatterData.points,
         );
       },
     );
@@ -146,7 +144,13 @@ class PairPlotCell extends StatelessWidget {
         final numField = isXCat ? y : x;
 
         final rows = dataset.rows;
-        final categories = controller.getUniqueCategories(catField);
+
+        final categories = rows
+          .map((r) => catField.parseCategory(r[catField.key]))
+          .whereType<String>()
+          .where((v) => controller.model.isCategoryActive(catField.key, v))
+          .toSet()
+          .toList();
 
         if (categories.isEmpty) return _empty('Нет данных');
 
