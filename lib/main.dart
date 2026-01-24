@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
+import 'features/bi_model/bi_page.dart';
 import 'dataset/csv_data_source.dart';
 import 'dataset/dataset.dart';
 import 'dataset/field_descriptor.dart';
-import 'features/pair_plots/pair_plot.dart';
-import 'features/pair_plots/pair_plot_config.dart';
-import 'features/pair_plots/pair_plot_controller.dart';
 import 'features/bi_model/bi_model.dart';
-import 'features/pair_plots/pair_plot_style.dart';
+import 'features/pair_plots/pair_plot_controller.dart';
 
 Future<void> main() async {
   runApp(const MyApp());
@@ -21,8 +19,8 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Анализатор данных о недвижимости',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
         useMaterial3: true,
+        colorSchemeSeed: Colors.blue,
       ),
       home: const HomeScreen(),
     );
@@ -37,16 +35,20 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late PairPlotController controller;
+  late final BIModel model;
+  late final PairPlotController controller;
 
   @override
   void initState() {
     super.initState();
+
+    model = BIModel(Dataset.empty());
+    controller = PairPlotController(model);
   }
 
-  Future<Dataset> _loadDataset() {
+  Future<Dataset> _loadDataset() async {
     final source = CsvDataSource(
-      path: 'assets/heart_attack_prediction_dataset.csv',
+      path: 'assets/test.csv',
     );
     return source.load();
   }
@@ -60,13 +62,17 @@ class _HomeScreenState extends State<HomeScreen> {
       body: FutureBuilder<Dataset>(
         future: _loadDataset(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+          if (snapshot.connectionState ==
+              ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
           }
 
           if (snapshot.hasError) {
             return Center(
-              child: Text('Ошибка загрузки: ${snapshot.error}'),
+              child:
+                  Text('Ошибка загрузки: ${snapshot.error}'),
             );
           }
 
@@ -76,37 +82,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
           final dataset = snapshot.data!;
 
-          // Hue для цвета
-          final hueField = FieldDescriptor.categorical(
-            key: 'Heart Attack Risk',
-            label: 'Риск сердечного приступа',
-          );
+          // 🔑 Один раз обновляем model
+          model.setDataset(dataset);
 
-          // Инициализация контроллера с BIModel
-          final model = BIModel(dataset);
-          controller = PairPlotController(model);
-          controller.initialize(dataset, hueField, ColorPalette.categorical);
+          // 🔑 Hue задаётся через BIModel
+          model.setHueField('cp');
 
-          // Поля для визуализации
-          final numericFields =
-              dataset.fields.where((f) => f.type == FieldType.continuous).toList();
-
-          return PairPlot(
-            dataset: dataset,
-            config: PairPlotConfig(
-              dataset: dataset,
-              fields: numericFields,
-              hue: hueField,
-              palette: ColorPalette.categorical,
-              colorScale: controller.colorScale,
-              style: const PairPlotStyle(
-                dotSize: 4.0,
-                alpha: 0.7,
-                showHistDiagonal: true,
-                showCorrelation: true,
-                maxPoints: 100,
-              ),
-            ),
+          return BIPage(
+            model: model,
             controller: controller,
           );
         },

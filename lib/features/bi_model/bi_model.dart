@@ -1,75 +1,129 @@
 import 'package:flutter/material.dart';
-
 import '../../dataset/dataset.dart';
 
 class BIModel extends ChangeNotifier {
-  final Dataset dataset;
+  late Dataset _dataset;
+  Dataset get dataset => _dataset;
 
   String? xField;
   String? yField;
   String? hueField;
 
-  final Map<String, Set<dynamic>> categoricalFilters;
-  final Map<String, RangeValues> numericFilters;
+  final Map<String, Set<String>> categoricalFilters = {};
+  final Map<String, RangeValues> numericFilters = {};
 
   int? hoveredRow;
-  final Set<int> selectedRows;
+  final Set<int> selectedRows = {};
 
-  BIModel(this.dataset)
-      : categoricalFilters = {},
-        numericFilters = {},
-        selectedRows = {};
+  BIModel(Dataset initialDataset) {
+    _dataset = initialDataset;
+  }
 
-  // ===== CATEGORY FILTERS =====
+  /* ================= DATASET ================= */
+
+  void setDataset(Dataset dataset) {
+    _dataset = dataset;
+    clearAllFilters();
+    notifyListeners();
+  }
+
+  /* ================= HUE ================= */
+
+  void setHueField(String? fieldKey) {
+    if (hueField != fieldKey) {
+      hueField = fieldKey;
+      notifyListeners();
+    }
+  }
+
+  /* ================= CATEGORY FILTERS ================= */
 
   bool isCategoryActive(String field, dynamic value) {
     final set = categoricalFilters[field];
     if (set == null || set.isEmpty) return true;
-    return set.contains(value);
+    return set.contains(value.toString());
   }
 
-  Set<dynamic> categoriesOf(String field) =>
+  Set<String> categoriesOf(String field) =>
       categoricalFilters[field] ?? {};
 
+  Set<String> allCategoriesOf(String field) {
+    return _dataset.rows
+        .map((row) => row[field]?.toString())
+        .whereType<String>()
+        .toSet();
+  }
+
   void toggleCategory(String field, dynamic value) {
-    final set = categoricalFilters.putIfAbsent(field, () => {});
+    final set =
+        categoricalFilters.putIfAbsent(field, () => <String>{});
 
-    final stringValue = value.toString();
-
-    if (set.contains(stringValue)) {
-      set.remove(stringValue);
+    final v = value.toString();
+    if (set.contains(v)) {
+      set.remove(v);
     } else {
-      set.add(stringValue);
+      set.add(v);
     }
 
-    // Если все категории выбраны - очищаем фильтр
-    final allValues = _getAllCategoriesForField(field);
-    if (set.length == allValues.length) {
+    if (set.length == allCategoriesOf(field).length) {
       set.clear();
     }
 
     notifyListeners();
   }
 
-  // Вспомогательный метод для получения всех категорий поля
-  Set<String?> _getAllCategoriesForField(String field) {
-    return dataset.rows
-        .map((row) => row[field]?.toString())
-        .where((v) => v != null)
-        .toSet();
-  }
-
-  void clearCategoryFilter(String field) {
-    categoricalFilters.remove(field);
+  void clearCategoryFilters() {
+    categoricalFilters.clear();
     notifyListeners();
   }
 
-  // ===== HOVER =====
+  /* ================= NUMERIC FILTERS ================= */
+
+  void setNumericFilter(String field, RangeValues range) {
+    numericFilters[field] = range;
+    notifyListeners();
+  }
+
+  void clearNumericFilter(String field) {
+    numericFilters.remove(field);
+    notifyListeners();
+  }
+
+  void clearAllNumericFilters() {
+    numericFilters.clear();
+    notifyListeners();
+  }
+
+  void clearAllFilters() {
+    categoricalFilters.clear();
+    numericFilters.clear();
+  }
+
+  /* ================= HOVER / SELECTION ================= */
 
   void setHoveredRow(int? row) {
     if (hoveredRow != row) {
       hoveredRow = row;
       notifyListeners();
     }
+  }
+
+  void toggleRowSelection(int row) {
+    if (selectedRows.contains(row)) {
+      selectedRows.remove(row);
+    } else {
+      selectedRows.add(row);
+    }
+    notifyListeners();
+  }
+
+  void clearSelection() {
+    selectedRows.clear();
+    notifyListeners();
+  }
+
+  bool hasAnyFilter() {
+    return categoricalFilters.values.any((v) => v.isNotEmpty) ||
+        numericFilters.isNotEmpty;
   }
 }

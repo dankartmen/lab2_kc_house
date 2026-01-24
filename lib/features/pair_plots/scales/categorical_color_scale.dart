@@ -16,31 +16,19 @@ class CategoricalColorScale {
   /// Фабрика
   factory CategoricalColorScale.fromData({
     required List<String> values,
-    required ColorPalette palette,
-    int? maxCategories,
-    Comparator<String>? sort,
+    int maxCategories = 6,
   }) {
-    var unique = values.toSet().toList();
+    var unique = values.toSet().toList()..sort();
 
-    // сортировка
-    if (sort != null) {
-      unique.sort(sort);
-    } else {
-      unique.sort(); // default
+    if (unique.length > maxCategories){
+      unique = unique.take(maxCategories).toList()..add('Other');
     }
 
-    // ограничение количества
-    if (maxCategories != null && unique.length > maxCategories) {
-      unique = unique.take(maxCategories).toList()
-        ..add('Other');
-    }
-
+    final palette = Colors.primaries;
     final colors = <String, Color>{};
-    final paletteColors = palette.colors;
-
     for (var i = 0; i < unique.length; i++) {
       colors[unique[i]] =
-          paletteColors[i % paletteColors.length];
+          palette[i % palette.length];
     }
 
     return CategoricalColorScale._(colors, unique);

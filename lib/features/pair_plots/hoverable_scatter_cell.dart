@@ -6,7 +6,7 @@ import 'layout/plot_layout.dart';
 import 'pair_plot_style.dart';
 import 'utils/plot_mapper.dart';
 import 'painters/scatter_painter.dart';
-import 'utils/axis_painter.dart';
+import 'painters/axis_painter.dart';
 import 'scales/categorical_color_scale.dart';
 
 class HoverableScatterCell extends StatefulWidget {
@@ -47,8 +47,9 @@ class _HoverableScatterCellState extends State<HoverableScatterCell> {
   Widget build(BuildContext context) {
     return MouseRegion(
       onHover: (event) {
-        final hit = _hitTest(event.localPosition, widget.filteredPoints);
-          widget.controller.model.setHoveredRow(hit);
+        widget.controller.model.setHoveredRow(
+          _hitTest(event.localPosition)
+        );
       },
       onExit: (_) {
         widget.controller.model.setHoveredRow(null);
@@ -75,15 +76,11 @@ class _HoverableScatterCellState extends State<HoverableScatterCell> {
               painter: AxisPainter(
                 mapper: widget.mapper,
                 axisRect: widget.plotLayout.xAxisRect(
-                  Size(
-                    widget.mapper.plotRect.width + 16,
-                    widget.mapper.plotRect.height + 16,
-                  ),
+                    widget.mapper.plotRect.size
                 ),
                 orientation: AxisOrientation.horizontal,
                 label: widget.x.label,
               ),
-              size: Size.infinite,
             ),
 
           // Ось Y
@@ -92,10 +89,7 @@ class _HoverableScatterCellState extends State<HoverableScatterCell> {
               painter: AxisPainter(
                 mapper: widget.mapper,
                 axisRect: widget.plotLayout.yAxisRect(
-                  Size(
-                    widget.mapper.plotRect.width + 16,
-                    widget.mapper.plotRect.height + 16,
-                  ),
+                  widget.mapper.plotRect.size,
                 ),
                 orientation: AxisOrientation.vertical,
                 label: widget.y.label,
@@ -104,39 +98,33 @@ class _HoverableScatterCellState extends State<HoverableScatterCell> {
             ),
 
           if (widget.controller.model.hoveredRow != null)
-            _buildTooltip(context, widget.controller.model.hoveredRow!),
+            _tooltip(widget.controller.model.hoveredRow!),
         ],
       ),
     );
   }
 
-  int? _hitTest(Offset pos, List<ScatterPoint> points) {
-    const radius = 6.0;
-
-    for (final p in points) {
+  int? _hitTest(Offset pos) {
+    for (final p in widget.filteredPoints) {
       final mapped = widget.mapper.map(p.x, p.y);
-      if ((mapped - pos).distance <= radius) {
-        return p.rowIndex;
-      }
+      if ((mapped - pos).distance < 6) return p.rowIndex;
     }
     return null;
   }
 
-  Widget _buildTooltip(BuildContext context, int index) {
+  Widget _tooltip(int row) {
     final point = widget.data.points.firstWhere(
-      (p) => p.rowIndex == index,
-      orElse: () => widget.data.points.first,
+      (p) => p.rowIndex == row,
     );
 
     return Positioned(
-      left: 4,
-      top: 4,
+      left: 6,
+      top: 6,
       child: Material(
         elevation: 3,
         borderRadius: BorderRadius.circular(6),
-        child: Container(
+        child: Padding(
           padding: const EdgeInsets.all(6),
-          color: Colors.white,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -144,10 +132,6 @@ class _HoverableScatterCellState extends State<HoverableScatterCell> {
               Text('${widget.y.label}: ${point.y.toStringAsFixed(2)}'),
               if (point.category != null)
                 Text('Group: ${point.category}'),
-              Text(
-                'Row: ${point.rowIndex}',
-                style: const TextStyle(fontSize: 10, color: Colors.grey),
-              ),
             ],
           ),
         ),

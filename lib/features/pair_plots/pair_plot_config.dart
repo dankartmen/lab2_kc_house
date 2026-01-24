@@ -16,30 +16,15 @@ import '../../dataset/field_descriptor.dart';
 class PairPlotConfig{
   /// {@macro pair_plot_config}
   const PairPlotConfig({
-    required this.dataset, 
     required this.style, 
     required this.fields, 
-    this.hue,
-    this.palette,
-    this.colorScale,
   });
 
-  final Dataset dataset;
-
+  /// Визуальный стиль
   final PairPlotStyle style;
   
-  final CategoricalColorScale? colorScale;
-
-  /// Поля, используемые для построения матрицы диаграмм.
+  /// Поля, отображаемые в матрице
   final List<FieldDescriptor> fields;
-
-  /// Поле, используемое для цветовой группировки.
-  ///
-  /// Должно иметь тип [FieldType.categorical].
-  final FieldDescriptor? hue;
-
-  /// Цветовая палитра для группировки.
-  final ColorPalette? palette;
 }
 
 /// Цветовые палитры для визуализации.

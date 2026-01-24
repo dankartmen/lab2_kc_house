@@ -5,13 +5,13 @@ import 'package:lab2_kc_house/features/bi_model/bi_model.dart';
   class PairPlotLegend extends StatelessWidget {
     final Map<String, Color> legend;
     final BIModel model;
-    final String fieldKey;
+    final String field;
 
     const PairPlotLegend({
       super.key,
       required this.legend,
       required this.model,
-      required this.fieldKey ,
+      required this.field,
     });
 
     @override
@@ -20,12 +20,13 @@ import 'package:lab2_kc_house/features/bi_model/bi_model.dart';
         spacing: 12,
         runSpacing: 8,
         children: legend.entries.map((e) {
-          final isActive = model.isCategoryActive(fieldKey, e.key);
+          final active = model.categoriesOf(field).isEmpty ||
+            model.categoriesOf(field).contains(e.key);
 
           return GestureDetector(
-            onTap: () => model.toggleCategory(fieldKey,e.key),
+            onTap: () => model.toggleCategory(field,e.key),
             child: Opacity(
-              opacity: isActive ? 1.0 : 0.3,
+              opacity: active ? 1.0 : 0.3,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [

@@ -13,7 +13,6 @@ import 'pair_plot_controller.dart';
 import 'utils/plot_mapper.dart';
 
 class PairPlotCell extends StatelessWidget {
-  final Dataset dataset;
   final FieldDescriptor x;
   final FieldDescriptor y;
   final PairPlotConfig config;
@@ -24,7 +23,6 @@ class PairPlotCell extends StatelessWidget {
 
   const PairPlotCell({
     super.key,
-    required this.dataset,
     required this.x,
     required this.y,
     required this.config,
@@ -42,12 +40,12 @@ class PairPlotCell extends StatelessWidget {
         border: Border.all(color: Colors.grey.shade300),
       ),
       child: isDiagonal
-          ? _buildDiagonalPlot()
-          : _buildScatterPlot(),
+          ? _buildDiagonal()
+          : _buildOffDiagonal(),
     );
   }
 
-  Widget _buildDiagonalPlot() {
+  Widget _buildDiagonal() {
     if (x.type == FieldType.categorical) {
       return _buildCategoricalHistogram();
     }
@@ -56,11 +54,11 @@ class PairPlotCell extends StatelessWidget {
       return _empty('—');
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final values = controller.getNumericValues(x);
-        if (values.isEmpty) return _empty('Нет данных');
+    final values = controller.getNumericValues(x);
+    if (values.isEmpty) return _empty('Нет данных');
 
+    return LayoutBuilder(
+      builder: (_, constraints) {
         return CustomPaint(
           painter: HistogramPainter(
             values: values,
@@ -73,15 +71,15 @@ class PairPlotCell extends StatelessWidget {
   }
 
   Widget _buildCategoricalHistogram() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final values = controller.getCategoricalValues(x);
-        if (values.isEmpty) return _empty('Нет данных');
+    final values = controller.getCategoricalValues(x);
+    if (values.isEmpty) return _empty('Нет данных');
 
+    return LayoutBuilder(
+      builder: (_, constraints) {
         return CustomPaint(
           painter: CategoricalHistogramPainter(
             values: values,
-            colorScale: config.colorScale,
+            colorScale: controller.colorScale,
           ),
           size: constraints.biggest,
         );
@@ -89,25 +87,32 @@ class PairPlotCell extends StatelessWidget {
     );
   }
 
-  Widget _buildScatterPlot() {
-    if (x.type == FieldType.categorical && y.type == FieldType.categorical) {
+  Widget _buildOffDiagonal() {
+    if (x.type == FieldType.categorical &&
+        y.type == FieldType.categorical) {
       return _empty('N/A');
     }
 
-    if (x.type == FieldType.categorical || y.type == FieldType.categorical) {
-      return _buildCategoricalNumericPlot();
+    if (x.type == FieldType.categorical ||
+        y.type == FieldType.categorical) {
+      return _buildCategoricalNumeric();
     }
 
+    return _buildScatter();
+  }  
+    
+    
+  _buildScatter(){
     return LayoutBuilder(
       builder: (context, constraints) {
-        final scatterData = controller.getScatterData(x, y, hue: config.hue, computeCorrelation: config.style.showCorrelation);
+        final data = controller.getScatterData(x, y, computeCorrelation: config.style.showCorrelation);
 
-        if (scatterData.points.isEmpty) {
+        if (data.points.isEmpty) {
           return _empty('Нет данных');
         }
 
 
-        final layout = _buildLayout(scatterData);
+        final layout = _scatterLayout(data);
         final plotLayout = PlotLayout();
         final plotRect = plotLayout.plotRect(constraints.biggest);
 
@@ -120,39 +125,37 @@ class PairPlotCell extends StatelessWidget {
         );
 
         return HoverableScatterCell(
-          data: scatterData,
+          data: data,
           mapper: mapper,
           x: x,
           y: y,
           style: config.style,
-          colorScale: config.colorScale,
+          colorScale: controller.colorScale,
           showXAxis: showXAxis,
           showYAxis: showYAxis,
           plotLayout: plotLayout,
           controller: controller,
-          filteredPoints: scatterData.points,
+          filteredPoints: data.points,
         );
       },
     );
   }
 
-  Widget _buildCategoricalNumericPlot() {
+  Widget _buildCategoricalNumeric() {
     return LayoutBuilder(
-      builder: (context, constraints) {
+      builder: (_, constraints) {
         final isXCat = x.type == FieldType.categorical;
         final catField = isXCat ? x : y;
         final numField = isXCat ? y : x;
 
-        final rows = dataset.rows;
+        final rows = controller.visibleRowsFor(catField, numField);
+        if (rows.isEmpty) return _empty('Нет данных');
 
         final categories = rows
           .map((r) => catField.parseCategory(r[catField.key]))
           .whereType<String>()
-          .where((v) => controller.model.isCategoryActive(catField.key, v))
           .toSet()
           .toList();
-
-        if (categories.isEmpty) return _empty('Нет данных');
 
         final plotRect = PlotLayout().plotRect(constraints.biggest);
 
@@ -163,7 +166,7 @@ class PairPlotCell extends StatelessWidget {
             numField: numField,
             categories: categories,
             plotRect: plotRect,
-            colorScale: config.colorScale,
+            colorScale: controller.colorScale,
             isVertical: isXCat,
             controller: controller
           ),
@@ -173,8 +176,8 @@ class PairPlotCell extends StatelessWidget {
     );
   }
 
-  Widget _empty(String text) {
-    return Center(
+  Widget _empty(String text) =>
+    Center(
       child: Text(
         text,
         style: const TextStyle(
@@ -185,7 +188,7 @@ class PairPlotCell extends StatelessWidget {
     );
   }
 
-  ScatterLayout _buildLayout(ScatterData data) {
+  ScatterLayout _scatterLayout(ScatterData data) {
     final xs = data.points.map((p) => p.x);
     final ys = data.points.map((p) => p.y);
 
@@ -196,4 +199,3 @@ class PairPlotCell extends StatelessWidget {
       yMax: ys.reduce((a, b) => a > b ? a : b),
     );
   }
-}

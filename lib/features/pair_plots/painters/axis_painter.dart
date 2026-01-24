@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'plot_mapper.dart';
+import '../utils/plot_mapper.dart';
 
 enum AxisOrientation { horizontal, vertical }
 

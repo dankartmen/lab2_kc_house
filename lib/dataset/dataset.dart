@@ -13,4 +13,12 @@ class Dataset {
 
   List<dynamic> column(String key) =>
       rows.map((row) => row[key]).toList();
+
+  /// Создает пустой датасет с заданными полями
+  static Dataset empty({List<FieldDescriptor>? fields}) {
+    return Dataset(
+      fields: fields ?? [],
+      rows: [],
+    );
+  }
 }

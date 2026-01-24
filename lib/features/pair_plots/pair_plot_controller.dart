@@ -8,30 +8,27 @@ import '../../dataset/dataset.dart';
 import '../../dataset/field_descriptor.dart';
 import 'data/pair_plot_data_builder.dart';
 import 'data/scatter_data.dart';
-import 'pair_plot_config.dart';
 
 /// Контроллер для управления состоянием PairPlot.
 /// Хранит состояние фильтров и ховеров, уведомляет подписчиков об изменениях.
 class PairPlotController extends ChangeNotifier {
   late BIModel model;
-  late Dataset _dataset;
+  
+  Dataset get dataset => model.dataset;
+
   CategoricalColorScale? _colorScale;
+  CategoricalColorScale? get colorScale => _colorScale;
+  
   late List<int> _visibleRows;
 
   // Кэши данных
   final Map<String, ScatterData> _scatterCache = {};
-  final Map<String, List<double>> _numericValuesCache = {};
-  final Map<String, List<String>> _categoricalValuesCache = {};
-  final Map<String, List<String>> _uniqueCategoriesCache = {};
+  final Map<String, List<double>> _numericCache = {};
+  final Map<String, List<String>> _categoricalCache = {};
+  final Map<String, double> _minCache = {};
+  final Map<String, double> _maxCache = {};
   final Map<String, List<double>> _jitterCache = {};
 
-  // Кэш для min/max значений
-  final Map<String, double> _minValueCache = {};
-  final Map<String, double> _maxValueCache = {};
-
-  int? get hoveredIndex => model.hoveredRow;
-  Dataset get dataset => _dataset;
-  CategoricalColorScale? get colorScale => _colorScale;
 
   PairPlotController(this.model) {
     _rebuild();
@@ -40,30 +37,51 @@ class PairPlotController extends ChangeNotifier {
 
 
   void _rebuild() {
-    _dataset = model.dataset;
+    _visibleRows = List.generate(
+      dataset.rows.length,
+      (i) => i,
+    ).where(_passesFilters).toList();
 
-    _visibleRows = [];
-    for (int i = 0; i < model.dataset.rows.length; i++) {
-      if (_passesFilters(i)) {
-        _visibleRows.add(i);
-      }
+    _buildColorScale();
+    invalidateCache(notify: false);
+    notifyListeners();
+  }
+
+  void _buildColorScale() {
+    final hueKey = model.hueField;
+    if (hueKey == null) {
+      _colorScale = null;
+      return;
     }
 
-    invalidateCache();
+    final field = dataset.fields.firstWhere(
+      (f) => f.key == hueKey,
+      orElse: () => throw StateError('Hue field not found'),
+    );
+
+    final categories = _visibleRows
+        .map((r) => field.parseCategory(dataset.rows[r][hueKey]))
+        .whereType<String>()
+        .toList();
+
+    if (categories.isEmpty) {
+      _colorScale = null;
+      return;
+    }
+
+    _colorScale = CategoricalColorScale.fromData(
+      values: categories,
+    );
   }
 
   bool _passesFilters(int row) {
-    final r = model.dataset.rows[row];
+    final r = dataset.rows[row];
 
     // Категориальные фильтры
     for (final e in model.categoricalFilters.entries) {
-      final activeCategories = e.value;
-      if (activeCategories.isNotEmpty) {
-        final strValue = r[e.key]?.toString();
-        if (strValue == null || !activeCategories.contains(strValue)) {
-          return false;
-        }
-      }
+      if (e.value.isEmpty) continue;
+      final v = r[e.key]?.toString();
+      if (v == null || !e.value.contains(v)) return false;
     }
 
     // Числовые фильтры
@@ -76,116 +94,80 @@ class PairPlotController extends ChangeNotifier {
 
     return true;
   }
-
-
-  /// Инициализация контроллера
-  void initialize(Dataset dataset, FieldDescriptor? hue, ColorPalette? palette) {
-    _dataset = dataset;
-    
-    // Создаем colorScale если есть hue
-    if (hue != null) {
-      final hueValues = _getUniqueCategories(hue);
-      if (hueValues.isNotEmpty) {
-        _colorScale = CategoricalColorScale.fromData(
-          values: hueValues,
-          palette: palette ?? ColorPalette.defaultPalette,
-          sort: (a, b) => a.compareTo(b),
-          maxCategories: 6,
-        );
-      }
-    }
-    
-    // Очищаем кэш при инициализации
-    invalidateCache();
-  }
   
-  /// Получить кэшированные числовые значения для поля
+  List<Map<String, dynamic>> visibleRowsFor(
+    FieldDescriptor catField,
+    FieldDescriptor numField,
+  ) {
+    return _visibleRows
+        .map((i) => dataset.rows[i])
+        .where((r) =>
+            r.containsKey(catField.key) &&
+            r.containsKey(numField.key))
+        .toList();
+  }
+
   List<double> getNumericValues(FieldDescriptor field) {
-    final key = field.key;
-    if (!_numericValuesCache.containsKey(key)) {
-      _numericValuesCache[key] = _dataset.rows
-          .map((r) => r[field.key])
+    return _numericCache.putIfAbsent(
+      field.key,
+      () => _visibleRows
+          .map((i) => dataset.rows[i][field.key])
           .whereType<num>()
           .map((e) => e.toDouble())
-          .toList();
-    }
-    return _numericValuesCache[key]!;
+          .toList(),
+    );
   }
 
+  List<String> getCategoricalValues(FieldDescriptor field) {
+    return _categoricalCache.putIfAbsent(
+      field.key,
+      () => _visibleRows
+          .map((i) => field.parseCategory(dataset.rows[i][field.key]))
+          .whereType<String>()
+          .toList(),
+    );
+  }
 
-  /// Получить минимальное значение для поля
-  double getMinValue(FieldDescriptor field) {
-    final key = field.key;
-    if (!_minValueCache.containsKey(key)) {
-      final values = getNumericValues(field);
-      _minValueCache[key] = values.isNotEmpty 
-          ? values.reduce((a, b) => a < b ? a : b)
-          : 0.0;
-    }
-    return _minValueCache[key]!;
+  double getMin(FieldDescriptor field) {
+    return _minCache.putIfAbsent(
+      field.key,
+      () => getNumericValues(field).reduce(min),
+    );
   }
 
   /// Получить максимальное значение для поля
-  double getMaxValue(FieldDescriptor field) {
-    final key = field.key;
-    if (!_maxValueCache.containsKey(key)) {
-      final values = getNumericValues(field);
-      _maxValueCache[key] = values.isNotEmpty 
-          ? values.reduce((a, b) => a > b ? a : b)
-          : 0.0;
-    }
-    return _maxValueCache[key]!;
+  double getMax(FieldDescriptor field) {
+    return _maxCache.putIfAbsent(
+      field.key,
+      () => getNumericValues(field).reduce(max),
+    );
   }
 
   /// Получить предварительно рассчитанные jitter значения
-  List<double> getJitters(int count, {int seed = 42}) {
-    final key = 'jitters-$count-$seed';
-    if (!_jitterCache.containsKey(key)) {
-      final rnd = Random(seed);
-      _jitterCache[key] = List.generate(count, 
-        (_) => (rnd.nextDouble() - 0.5) * 0.6
-      );
-    }
-    return _jitterCache[key]!;
+  List<double> getJitters(int count, int seed) {
+    final key = '$count-$seed';
+    return _jitterCache.putIfAbsent(
+      key,
+      () {
+        final rnd = Random(seed);
+        return List.generate(count, (_) => (rnd.nextDouble() - 0.5) * 0.6);
+      },
+    );
   }
   
-  /// Получить кэшированные категориальные значения для поля
-  List<String> getCategoricalValues(FieldDescriptor field) {
-    final key = field.key;
-    if (!_categoricalValuesCache.containsKey(key)) {
-      _categoricalValuesCache[key] = _dataset.rows
-          .map((r) => r[field.key]?.toString())
-          .whereType<String>()
-          .toList();
-    }
-    return _categoricalValuesCache[key]!;
-  }
-
-  /// Получить уникальные категории для поля
-  List<String> getUniqueCategories(FieldDescriptor field) {
-    final key = field.key;
-    if (!_uniqueCategoriesCache.containsKey(key)) {
-      final values = getCategoricalValues(field);
-      _uniqueCategoriesCache[key] = values.toSet().toList();
-    }
-    return _uniqueCategoriesCache[key]!;
-  }
 
   /// Получить ScatterData с кэшированием
   ScatterData getScatterData(
     FieldDescriptor x,
     FieldDescriptor y, {
-    FieldDescriptor? hue,
     bool computeCorrelation = true,
   }) {
-    final hueFilterKey = hue != null 
-      ? model.categoriesOf(hue.key).join(',') 
-      : 'no-hue';
+    final hueKey = model.hueField;
+    final cacheKey =
+        '${x.key}|${y.key}|$hueKey|${_visibleRows.join(",")}';
 
-    final key = '${x.key}-${y.key}-${hue?.key}-${_visibleRows.hashCode}-$hueFilterKey';
-
-    if (_scatterCache.containsKey(key)) {
-      return _scatterCache[key]!;
+    if (_scatterCache.containsKey(cacheKey)) {
+      return _scatterCache[cacheKey]!;
     }
 
     final points = <ScatterPoint>[];
@@ -199,7 +181,9 @@ class PairPlotController extends ChangeNotifier {
 
       if (xv is! num || yv is! num) continue;
 
-      final category = hue?.parseCategory(r[hue.key]);
+      final category = hueKey != null
+        ? r[hueKey]?.toString()
+        : null;
 
 
       points.add(
@@ -225,31 +209,19 @@ class PairPlotController extends ChangeNotifier {
           : null,
     );
 
-    _scatterCache[key] = data;
+    _scatterCache[cacheKey] = data;
     return data;
   }
 
 
-  /// Вспомогательный метод для получения уникальных категорий
-  List<String> _getUniqueCategories(FieldDescriptor field) {
-    return _dataset.rows
-        .map((row) => row[field.key]?.toString())
-        .map((v) => field.parseCategory(v))
-        .whereType<String>()
-        .toSet()
-        .toList();
-  }
-
-
   /// Очистить все кэши 
-  void invalidateCache() {
+  void invalidateCache({bool notify = true}) {
     _scatterCache.clear();
-    _numericValuesCache.clear();
-    _categoricalValuesCache.clear();
-    _uniqueCategoriesCache.clear();
+    _numericCache.clear();
+    _categoricalCache.clear();
     _jitterCache.clear();
-    _minValueCache.clear();
-    _maxValueCache.clear();
-    notifyListeners();
+    _minCache.clear();
+    _maxCache.clear();
+    if (notify) notifyListeners();
   }
 }

@@ -5,14 +5,12 @@ import 'pair_plot_controller.dart';
 import '../../dataset/dataset.dart';
 
 class PairPlotMatrix extends StatelessWidget {
-  final Dataset dataset;
   final PairPlotConfig config;
   final PairPlotController controller;
   final Size cellSize;
 
   const PairPlotMatrix({
     super.key,
-    required this.dataset,
     required this.config,
     required this.controller,
     required this.cellSize,
@@ -31,27 +29,18 @@ class PairPlotMatrix extends StatelessWidget {
         childAspectRatio: cellSize.width / cellSize.height,
       ),
       itemCount: n * n,
-      itemBuilder: (context, index) {
+      itemBuilder: (_, index) {
         final row = index ~/ n;
         final col = index % n;
 
-        final x = fields[col];
-        final y = fields[row];
-        final isDiagonal = row == col;
-
-        // Определяем, нужно ли рисовать оси
-        final showYAxis = col == 0;
-        final showXAxis = row == n - 1;
-
         return PairPlotCell(
-          dataset: dataset,
-          x: x,
-          y: y,
+          x: fields[col],
+          y: fields[row],
           config: config,
           controller: controller,
-          isDiagonal: isDiagonal,
-          showXAxis: showXAxis,
-          showYAxis: showYAxis,
+          isDiagonal: row == col,
+          showXAxis: col == 0,
+          showYAxis: row == n - 1,
         );
       },
     );

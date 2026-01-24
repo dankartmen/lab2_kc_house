@@ -1,6 +1,7 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:lab2_kc_house/features/pair_plots/pair_plot_controller.dart';
 import '../../../dataset/field_descriptor.dart';
+import '../pair_plot_controller.dart';
 import '../scales/categorical_color_scale.dart';
 
 class StripPlotPainter extends CustomPainter {
@@ -9,17 +10,9 @@ class StripPlotPainter extends CustomPainter {
   final FieldDescriptor numField;
   final List<String> categories;
   final Rect plotRect;
-  final bool isVertical;
   final CategoricalColorScale? colorScale;
+  final bool isVertical;
   final PairPlotController controller;
-
-  /// Кешированные значения
-  late final List<double> _numericValues;
-  late final double _minV;
-  late final double _maxV;
-  late final List<double> _jitters;
-  late final Map<String, int> _categoryIndexMap;
-
 
   StripPlotPainter({
     required this.rows,
@@ -27,89 +20,86 @@ class StripPlotPainter extends CustomPainter {
     required this.numField,
     required this.categories,
     required this.plotRect,
+    required this.colorScale,
     required this.isVertical,
     required this.controller,
-    this.colorScale,
-  }){
-    _initializeCache();
-  }
-
-
-  void _initializeCache() {
-    // Используем кэшированные значения из контроллера
-    _numericValues = controller.getNumericValues(numField);
-    if (_numericValues.isNotEmpty) {
-      _minV = controller.getMinValue(numField);
-      _maxV = controller.getMaxValue(numField);
-    } else {
-      _minV = 0.0;
-      _maxV = 0.0;
-    }
-    
-    // Получаем кэшированные jitters
-    _jitters = controller.getJitters(rows.length, seed: 42);
-
-    _categoryIndexMap = {
-      for (var i = 0; i < categories.length; i++)
-        categories[i]: i
-    };
-  }
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (_numericValues.isEmpty) return;
+    final paint = Paint()..style = PaintingStyle.fill;
 
-    // Отфильтровываем строки по активным категориям из BIModel
-    final visibleRows = rows.where((row) {
-      final catValue = catField.parseCategory(row[catField.key]);
-      return controller.model.isCategoryActive(catField.key, catValue);
-    }).toList();
-    for (int i = 0; i < visibleRows.length; i++) {
-      final row = visibleRows[i];
-      final cat = row[catField.key];
-      final numValue = row[numField.key];
+    final min = rows
+        .map((r) => r[numField.key])
+        .whereType<num>()
+        .map((e) => e.toDouble())
+        .reduce(minFunc);
 
-      if (cat is! String || numValue is! num) continue;
+    final max = rows
+        .map((r) => r[numField.key])
+        .whereType<num>()
+        .map((e) => e.toDouble())
+        .reduce(maxFunc);
 
-      final catIndex = _categoryIndexMap[cat];
-      if (catIndex == null) continue;
+    for (var c = 0; c < categories.length; c++) {
+      final cat = categories[c];
+      final visible = rows.where((r) {
+        final catVal = catField.parseCategory(r[catField.key]);
+        return catVal == cat &&
+            controller.model.isCategoryActive(
+              catField.key,
+              cat,
+            );
+      }).toList();
 
-      // Используем предварительно рассчитанный jitter
-      final jitter = _jitters[i];
+      if (visible.isEmpty) continue;
 
-      final dx = isVertical
-          ? plotRect.left +
-              (catIndex + 0.5 + jitter) / categories.length * plotRect.width
-          : plotRect.left +
-              _norm(numValue.toDouble(), _minV, _maxV) * plotRect.width;
+      final jitters =
+          controller.getJitters(visible.length, c * 31);
 
-      final dy = isVertical
-          ? plotRect.bottom -
-              _norm(numValue.toDouble(), _minV, _maxV) * plotRect.height
-          : plotRect.bottom -
-              (catIndex + 0.5 + jitter) / categories.length * plotRect.height;
+      for (var i = 0; i < visible.length; i++) {
+        final r = visible[i];
+        final v = r[numField.key];
+        if (v is! num) continue;
 
-      final paint = Paint()
-        ..color = colorScale?.colorOf(cat) ?? Colors.blue
-        ..style = PaintingStyle.fill;
+        final norm = (v - min) / (max - min);
+        final jitter = jitters[i];
 
-      canvas.drawCircle(Offset(dx, dy), 3, paint);
+        final dx = isVertical
+            ? plotRect.left +
+                (c + 0.5 + jitter) *
+                    plotRect.width /
+                    categories.length
+            : plotRect.left + norm * plotRect.width;
+
+        final dy = isVertical
+            ? plotRect.bottom - norm * plotRect.height
+            : plotRect.top +
+                (c + 0.5 + jitter) *
+                    plotRect.height /
+                    categories.length;
+
+        final color = controller.model.hueField != null
+            ? colorScale?.colorOf(
+                  r[controller.model.hueField!]
+                      ?.toString() ??
+                      '',
+                ) ??
+                Colors.grey
+            : Colors.blue;
+
+        paint.color = color.withValues(alpha: 0.7);
+        canvas.drawCircle(Offset(dx, dy), 3, paint);
+      }
     }
   }
 
-  double _norm(double v, double min, double max) {
-    if (max == min) return 0.5;
-    return (v - min) / (max - min);
-  }
+  double minFunc(double a, double b) => a < b ? a : b;
+  double maxFunc(double a, double b) => a > b ? a : b;
 
   @override
-  bool shouldRepaint(covariant StripPlotPainter oldDelegate) {
-    return oldDelegate.rows != rows ||
-           oldDelegate.catField != catField ||
-           oldDelegate.numField != numField ||
-           oldDelegate.categories != categories ||
-           oldDelegate.plotRect != plotRect ||
-           oldDelegate.isVertical != isVertical ||
-           oldDelegate.colorScale != colorScale;
-  }
+  bool shouldRepaint(covariant StripPlotPainter old) =>
+      old.rows != rows ||
+      old.categories != categories ||
+      old.plotRect != plotRect;
 }
