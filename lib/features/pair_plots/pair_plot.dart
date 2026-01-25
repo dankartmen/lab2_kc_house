@@ -20,8 +20,9 @@ class PairPlot extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: controller,
-      builder: (_, _) {
-        final legend = controller.colorScale?.legend;
+      builder: (_, __) {
+        final colorScale = controller.colorScale;
+        final hueField = controller.model.hueField;
 
         return Card(
           margin: const EdgeInsets.all(16),
@@ -30,11 +31,10 @@ class PairPlot extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (legend != null && controller.model.hueField != null) ...[
+                if (colorScale != null && hueField != null) ...[
                   PairPlotLegend(
-                    legend: legend,
-                    model: controller.model,
-                    field: controller.model.hueField!,
+                    scale: colorScale,
+                    fieldLabel: hueField,
                   ),
                   const SizedBox(height: 12),
                 ],

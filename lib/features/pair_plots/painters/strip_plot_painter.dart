@@ -28,73 +28,52 @@ class StripPlotPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..style = PaintingStyle.fill;
 
-    final min = rows
+    final nums = rows
         .map((r) => r[numField.key])
         .whereType<num>()
         .map((e) => e.toDouble())
-        .reduce(minFunc);
+        .toList();
 
-    final max = rows
-        .map((r) => r[numField.key])
-        .whereType<num>()
-        .map((e) => e.toDouble())
-        .reduce(maxFunc);
+    if (nums.isEmpty) return;
+
+    final min = nums.reduce((a, b) => a < b ? a : b);
+    final max = nums.reduce((a, b) => a > b ? a : b);
 
     for (var c = 0; c < categories.length; c++) {
       final cat = categories[c];
       final visible = rows.where((r) {
-        final catVal = catField.parseCategory(r[catField.key]);
-        return catVal == cat &&
-            controller.model.isCategoryActive(
-              catField.key,
-              cat,
-            );
+        final v = catField.parseCategory(r[catField.key]);
+        final filter = controller.model.categoricalFilters[catField.key];
+        return v == cat && (filter == null || filter.contains(cat));
       }).toList();
 
-      if (visible.isEmpty) continue;
-
-      final jitters =
-          controller.getJitters(visible.length, c * 31);
-
-      for (var i = 0; i < visible.length; i++) {
-        final r = visible[i];
+      for (final r in visible) {
         final v = r[numField.key];
         if (v is! num) continue;
 
         final norm = (v - min) / (max - min);
-        final jitter = jitters[i];
 
         final dx = isVertical
             ? plotRect.left +
-                (c + 0.5 + jitter) *
-                    plotRect.width /
-                    categories.length
+                (c + 0.5) * plotRect.width / categories.length
             : plotRect.left + norm * plotRect.width;
 
         final dy = isVertical
             ? plotRect.bottom - norm * plotRect.height
             : plotRect.top +
-                (c + 0.5 + jitter) *
-                    plotRect.height /
-                    categories.length;
+                (c + 0.5) * plotRect.height / categories.length;
 
-        final color = controller.model.hueField != null
+        paint.color = controller.model.hueField != null
             ? colorScale?.colorOf(
-                  r[controller.model.hueField!]
-                      ?.toString() ??
-                      '',
+                  r[controller.model.hueField!]?.toString() ?? '',
                 ) ??
                 Colors.grey
             : Colors.blue;
 
-        paint.color = color.withValues(alpha: 0.7);
         canvas.drawCircle(Offset(dx, dy), 3, paint);
       }
     }
   }
-
-  double minFunc(double a, double b) => a < b ? a : b;
-  double maxFunc(double a, double b) => a > b ? a : b;
 
   @override
   bool shouldRepaint(covariant StripPlotPainter old) =>

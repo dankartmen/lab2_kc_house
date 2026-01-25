@@ -1,13 +1,26 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../dataset/dataset.dart';
+import 'bi_analytics_service.dart';
 
 class BIModel extends ChangeNotifier {
-  late Dataset _dataset;
-  Dataset get dataset => _dataset;
+  final Dataset dataset;
+  late final BIAnalyticsService analytics;
+
+  BIModel(this.dataset) {
+    analytics = BIAnalyticsService(dataset);
+  }
 
   String? xField;
   String? yField;
   String? hueField;
+
+  bool learningMode = true;
+
+  final Map<String, RangeValues> numericFilters = {};
+  final Map<String, Set<String>> categoricalFilters = {};
+
+  int? hoveredRow;
 
   void setXField(String? v) {
     xField = v;
@@ -15,124 +28,52 @@ class BIModel extends ChangeNotifier {
   }
 
   void setYField(String? v) {
-    xField = v;
-    notifyListeners();
-  }
-  final Map<String, Set<String>> categoricalFilters = {};
-  final Map<String, RangeValues> numericFilters = {};
-
-  int? hoveredRow;
-  final Set<int> selectedRows = {};
-
-  BIModel(Dataset initialDataset) {
-    _dataset = initialDataset;
-  }
-
-  /* ================= DATASET ================= */
-
-  void setDataset(Dataset dataset) {
-    _dataset = dataset;
-    clearAllFilters();
+    yField = v; 
     notifyListeners();
   }
 
-  /* ================= HUE ================= */
+  void setHueField(String? v) {
+    hueField = v;
+    notifyListeners();
+  }
 
-  void setHueField(String? fieldKey) {
-    if (hueField != fieldKey) {
-      hueField = fieldKey;
-      notifyListeners();
+  void toggleLearningMode() {
+    learningMode = !learningMode;
+    notifyListeners();
+  }
+
+  void setHoveredRow(int? row) {
+    hoveredRow = row;
+    notifyListeners();
+  }
+
+  void setNumericFilter(String key, RangeValues v) {
+    numericFilters[key] = v;
+    notifyListeners();
+  }
+
+  void toggleCategory(String field, String value) {
+    categoricalFilters.putIfAbsent(field, () => <String>{});
+    if (!categoricalFilters[field]!.add(value)) {
+      categoricalFilters[field]!.remove(value);
     }
+    notifyListeners();
   }
 
-  /* ================= CATEGORY FILTERS ================= */
-
-  bool isCategoryActive(String field, dynamic value) {
-    final set = categoricalFilters[field];
-    if (set == null || set.isEmpty) return true;
-    return set.contains(value.toString());
+  void clearAllFilters() {
+    numericFilters.clear();
+    categoricalFilters.clear();
+    notifyListeners();
   }
 
   Set<String> categoriesOf(String field) =>
       categoricalFilters[field] ?? {};
 
-  Set<String> allCategoriesOf(String field) {
-    return _dataset.rows
-        .map((row) => row[field]?.toString())
+  Iterable<String> allCategoriesOf(String field) {
+    return dataset
+        .column(field)
+        .map((e) => e?.toString())
         .whereType<String>()
         .toSet();
-  }
-
-  void toggleCategory(String field, dynamic value) {
-    final set =
-        categoricalFilters.putIfAbsent(field, () => <String>{});
-
-    final v = value.toString();
-    if (set.contains(v)) {
-      set.remove(v);
-    } else {
-      set.add(v);
-    }
-
-    if (set.length == allCategoriesOf(field).length) {
-      set.clear();
-    }
-
-    notifyListeners();
-  }
-
-  void clearCategoryFilters() {
-    categoricalFilters.clear();
-    notifyListeners();
-  }
-
-  /* ================= NUMERIC FILTERS ================= */
-
-  void setNumericFilter(String field, RangeValues range) {
-    numericFilters[field] = range;
-    notifyListeners();
-  }
-
-  void clearNumericFilter(String field) {
-    numericFilters.remove(field);
-    notifyListeners();
-  }
-
-  void clearAllNumericFilters() {
-    numericFilters.clear();
-    notifyListeners();
-  }
-
-  void clearAllFilters() {
-    categoricalFilters.clear();
-    numericFilters.clear();
-  }
-
-  /* ================= HOVER / SELECTION ================= */
-
-  void setHoveredRow(int? row) {
-    if (hoveredRow != row) {
-      hoveredRow = row;
-      notifyListeners();
-    }
-  }
-
-  void toggleRowSelection(int row) {
-    if (selectedRows.contains(row)) {
-      selectedRows.remove(row);
-    } else {
-      selectedRows.add(row);
-    }
-    notifyListeners();
-  }
-
-  void clearSelection() {
-    selectedRows.clear();
-    notifyListeners();
-  }
-
-  bool hasAnyFilter() {
-    return categoricalFilters.values.any((v) => v.isNotEmpty) ||
-        numericFilters.isNotEmpty;
   }
 }

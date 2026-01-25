@@ -1,56 +1,48 @@
 import 'package:flutter/material.dart';
-
-import '../../dataset/dataset.dart';
 import '../../dataset/field_descriptor.dart';
 import 'bi_model.dart';
 
 class BIControlPanel extends StatelessWidget {
-  final Dataset dataset;
   final BIModel model;
 
-  const BIControlPanel({
-    super.key,
-    required this.dataset,
-    required this.model,
-  });
+  const BIControlPanel({super.key, required this.model});
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: model,
-      builder: (context, _) {
+      builder: (_, __) {
         return ListView(
           padding: const EdgeInsets.all(12),
           children: [
-            _sectionTitle('Поля'),
-            _fieldDropdown(
+            _title('Поля'),
+            _fieldPicker(
+              context,
               label: 'X',
               value: model.xField,
-              onChanged: (v) => model.xField = v,
+              onChanged: model.setXField,
             ),
-            _fieldDropdown(
+            _fieldPicker(
+              context,
               label: 'Y',
               value: model.yField,
-              onChanged: (v) => model.yField = v,
+              onChanged: model.setYField,
             ),
-            _fieldDropdown(
-              label: 'Цвет (Hue)',
+            _fieldPicker(
+              context,
+              label: 'Цвет',
               value: model.hueField,
               allowNull: true,
-              onChanged: (v) => model.hueField = v,
+              onChanged: model.setHueField,
             ),
+
             const Divider(height: 24),
+            _title('Фильтры'),
+            _filters(),
 
-            _sectionTitle('Фильтры'),
-            ..._numericFilters(),
-            ..._categoricalFilters(),
-
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             ElevatedButton.icon(
-              onPressed: () {
-                model.clearCategoryFilters();
-                model.clearAllNumericFilters();
-              },
+              onPressed: model.clearAllFilters,
               icon: const Icon(Icons.restart_alt),
               label: const Text('Сбросить фильтры'),
             ),
@@ -60,17 +52,13 @@ class BIControlPanel extends StatelessWidget {
     );
   }
 
-  Widget _sectionTitle(String text) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Text(
-          text,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-      );
-  
-  Widget _fieldDropdown({
+  Widget _title(String t) =>
+      Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text(t, style: const TextStyle(fontWeight: FontWeight.bold)));
+
+  Widget _fieldPicker(
+    BuildContext context, {
     required String label,
-    String? value,
+    required String? value,
     bool allowNull = false,
     required ValueChanged<String?> onChanged,
   }) {
@@ -84,74 +72,62 @@ class BIControlPanel extends StatelessWidget {
           hint: const Text('Не выбрано'),
           items: [
             if (allowNull)
-              const DropdownMenuItem(
-                value: null,
-                child: Text('—'),
-              ),
-            ...dataset.fields.map(
-              (f) => DropdownMenuItem(
-                value: f.key,
-                child: Text(f.label),
-              ),
+              const DropdownMenuItem(value: null, child: Text('—')),
+            ...model.dataset.fields.map(
+              (f) => DropdownMenuItem(value: f.key, child: Text(f.label)),
             ),
           ],
-          onChanged: (v) {
-            onChanged(v);
-            model.notifyListeners();
-          },
+          onChanged: onChanged,
         ),
       ],
     );
   }
 
-  List<Widget> _numericFilters() {
-    return dataset.fields
-        .where((f) => f.type == FieldType.continuous)
-        .map((f) {
-      final values = dataset.column(f.key).whereType<num>();
-      if (values.isEmpty) return const SizedBox.shrink();
+  Widget _filters() {
+    return Column(
+      children: model.dataset.fields.map((f) {
+        if (f.type == FieldType.continuous) {
+          final stats = model.analytics.numericStats(f);
+          if (stats.count == 0) return const SizedBox.shrink();
 
-      final min = values.reduce((a, b) => a < b ? a : b).toDouble();
-      final max = values.reduce((a, b) => a > b ? a : b).toDouble();
+          final current =
+              model.numericFilters[f.key] ??
+              RangeValues(stats.min!, stats.max!);
 
-      final current = model.numericFilters[f.key] ??
-          RangeValues(min, max);
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(f.label),
-          RangeSlider(
-            values: current,
-            min: min,
-            max: max,
-            onChanged: (v) => model.setNumericFilter(f.key, v),
-          ),
-        ],
-      );
-    }).toList();
-  }
-
-  List<Widget> _categoricalFilters() {
-    return dataset.fields
-        .where((f) => f.type == FieldType.categorical)
-        .map((f) {
-      final values = model.allCategoriesOf(f.key).toList();
-      if (values.isEmpty) return const SizedBox.shrink();
-
-      return ExpansionTile(
-        title: Text(f.label),
-        children: values.map((v) {
-          final active = model.categoriesOf(f.key).contains(v);
-          return CheckboxListTile(
-            dense: true,
-            value: active,
-            title: Text(v),
-            onChanged: (_) => model.toggleCategory(f.key, v),
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(f.label),
+              RangeSlider(
+                values: current,
+                min: stats.min!,
+                max: stats.max!,
+                onChanged: (v) => model.setNumericFilter(f.key, v),
+              ),
+            ],
           );
-        }).toList(),
-      );
-    }).toList();
-  }
+        }
 
+        if (f.type == FieldType.categorical) {
+          final values = model.allCategoriesOf(f.key).toList();
+          if (values.isEmpty) return const SizedBox.shrink();
+
+          return ExpansionTile(
+            title: Text(f.label),
+            children: values.map((v) {
+              final active = model.categoriesOf(f.key).contains(v);
+              return CheckboxListTile(
+                dense: true,
+                value: active,
+                title: Text(v),
+                onChanged: (_) => model.toggleCategory(f.key, v),
+              );
+            }).toList(),
+          );
+        }
+
+        return const SizedBox.shrink();
+      }).toList(),
+    );
+  }
 }

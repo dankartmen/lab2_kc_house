@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-
 import '../pair_plots/pair_plot.dart';
 import '../pair_plots/pair_plot_config.dart';
-import '../pair_plots/pair_plot_controller.dart';
 import '../pair_plots/pair_plot_style.dart';
+import '../pair_plots/pair_plot_controller.dart';
 import 'bi_control_panel.dart';
 import 'bi_model.dart';
 
-class BIPage extends StatefulWidget {
+class BIPage extends StatelessWidget {
   final BIModel model;
   final PairPlotController controller;
 
@@ -18,40 +17,36 @@ class BIPage extends StatefulWidget {
   });
 
   @override
-  State<BIPage> createState() => _BIPageState();
-}
-
-class _BIPageState extends State<BIPage> {
-  @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: widget.model,
+      animation: model,
       builder: (_, __) {
-        final dataset = widget.model.dataset;
-
         return Row(
           children: [
-            SizedBox(
-              width: 280,
-              child: BIControlPanel(
-                dataset: dataset,
-                model: widget.model,
-              ),
-            ),
+            SizedBox(width: 280, child: BIControlPanel(model: model)),
             const VerticalDivider(width: 1),
             Expanded(
-              child: PairPlot(
-                controller: widget.controller,
-                config: PairPlotConfig(
-                  fields: dataset.fields,
-                  style: const PairPlotStyle(
-                    dotSize: 4,
-                    alpha: 0.7,
-                    showCorrelation: true,
-                    showHistDiagonal: true,
-                    maxPoints: 200,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _header(),
+                  if (model.learningMode) _help(),
+                  Expanded(
+                    child: PairPlot(
+                      controller: controller,
+                      config: PairPlotConfig(
+                        fields: model.dataset.fields,
+                        style: const PairPlotStyle(
+                          dotSize: 4,
+                          alpha: 0.7,
+                          showCorrelation: true,
+                          showHistDiagonal: true,
+                          maxPoints: 200,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
           ],
@@ -59,4 +54,32 @@ class _BIPageState extends State<BIPage> {
       },
     );
   }
+
+  Widget _header() => Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            const Text(
+              'Связи между показателями',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const Spacer(),
+            IconButton(
+              tooltip: 'Режим обучения',
+              icon: const Icon(Icons.school),
+              onPressed: model.toggleLearningMode,
+            ),
+          ],
+        ),
+      );
+
+  Widget _help() => const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 12),
+        child: Text(
+          'Каждая ячейка показывает, как связаны два показателя.\n'
+          'Чем выше точка — тем больше значение.\n'
+          'Цвет обозначает категорию.',
+          style: TextStyle(fontSize: 12, color: Colors.grey),
+        ),
+      );
 }
