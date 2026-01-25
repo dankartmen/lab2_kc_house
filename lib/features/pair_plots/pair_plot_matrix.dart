@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'pair_plot_cell.dart';
 import 'pair_plot_config.dart';
 import 'pair_plot_controller.dart';
-import '../../dataset/dataset.dart';
 
 class PairPlotMatrix extends StatelessWidget {
   final PairPlotConfig config;
@@ -22,7 +21,6 @@ class PairPlotMatrix extends StatelessWidget {
     final n = fields.length;
 
     return GridView.builder(
-      shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: n,

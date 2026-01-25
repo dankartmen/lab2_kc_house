@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lab2_kc_house/features/pair_plots/pair_plot_style.dart';
-import 'package:lab2_kc_house/features/pair_plots/scales/categorical_color_scale.dart';
 
-import '../../dataset/dataset.dart';
 import '../../dataset/field_descriptor.dart';
 
 /// {@template pair_plot_config}

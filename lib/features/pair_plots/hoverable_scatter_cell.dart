@@ -76,7 +76,14 @@ class _HoverableScatterCellState extends State<HoverableScatterCell> {
               painter: AxisPainter(
                 mapper: widget.mapper,
                 axisRect: widget.plotLayout.xAxisRect(
-                    widget.mapper.plotRect.size
+                  Size(
+                    widget.mapper.plotRect.width +
+                        widget.plotLayout.paddingLeft +
+                        widget.plotLayout.paddingRight,
+                    widget.mapper.plotRect.height +
+                        widget.plotLayout.paddingTop +
+                        widget.plotLayout.paddingBottom,
+                  ),
                 ),
                 orientation: AxisOrientation.horizontal,
                 label: widget.x.label,
@@ -88,8 +95,15 @@ class _HoverableScatterCellState extends State<HoverableScatterCell> {
             CustomPaint(
               painter: AxisPainter(
                 mapper: widget.mapper,
-                axisRect: widget.plotLayout.yAxisRect(
-                  widget.mapper.plotRect.size,
+                axisRect: widget.plotLayout.xAxisRect(
+                  Size(
+                    widget.mapper.plotRect.width +
+                        widget.plotLayout.paddingLeft +
+                        widget.plotLayout.paddingRight,
+                    widget.mapper.plotRect.height +
+                        widget.plotLayout.paddingTop +
+                        widget.plotLayout.paddingBottom,
+                  ),
                 ),
                 orientation: AxisOrientation.vertical,
                 label: widget.y.label,
@@ -128,10 +142,20 @@ class _HoverableScatterCellState extends State<HoverableScatterCell> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('${widget.x.label}: ${point.x.toStringAsFixed(2)}'),
-              Text('${widget.y.label}: ${point.y.toStringAsFixed(2)}'),
+              Text(
+                '${widget.x.label}: ${point.x.toStringAsFixed(1)}',
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
+              Text(
+                '${widget.y.label}: ${point.y.toStringAsFixed(1)}',
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
               if (point.category != null)
-                Text('Group: ${point.category}'),
+                Text(
+                  'Категория: ${point.category}',
+                  style: const TextStyle(color: Colors.grey),
+                ),
+
             ],
           ),
         ),

@@ -41,12 +41,16 @@ class PairPlot extends StatelessWidget {
                 Expanded(
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
-                    child: SizedBox(
-                      width: cellSize.width * config.fields.length,
-                      child: PairPlotMatrix(
-                        config: config,
-                        controller: controller,
-                        cellSize: cellSize,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.vertical,
+                      child: SizedBox(
+                        width: cellSize.width * config.fields.length,
+                        height: cellSize.height * config.fields.length,
+                        child: PairPlotMatrix(
+                          config: config,
+                          controller: controller,
+                          cellSize: cellSize,
+                        ),
                       ),
                     ),
                   ),

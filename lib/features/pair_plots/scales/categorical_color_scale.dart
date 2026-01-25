@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../pair_plot_config.dart';
 
 class CategoricalColorScale {
   final Map<String, Color> _colors;

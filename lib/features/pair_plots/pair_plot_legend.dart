@@ -1,6 +1,5 @@
   import 'package:flutter/material.dart';
 import 'package:lab2_kc_house/features/bi_model/bi_model.dart';
-  import 'pair_plot_controller.dart';
 
   class PairPlotLegend extends StatelessWidget {
     final Map<String, Color> legend;

@@ -9,6 +9,15 @@ class BIModel extends ChangeNotifier {
   String? yField;
   String? hueField;
 
+  void setXField(String? v) {
+    xField = v;
+    notifyListeners();
+  }
+
+  void setYField(String? v) {
+    xField = v;
+    notifyListeners();
+  }
   final Map<String, Set<String>> categoricalFilters = {};
   final Map<String, RangeValues> numericFilters = {};
 

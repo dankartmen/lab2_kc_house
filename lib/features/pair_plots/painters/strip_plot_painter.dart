@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../../dataset/field_descriptor.dart';
 import '../pair_plot_controller.dart';

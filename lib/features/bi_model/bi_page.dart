@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../dataset/field_descriptor.dart';
 import '../pair_plots/pair_plot.dart';
 import '../pair_plots/pair_plot_config.dart';
 import '../pair_plots/pair_plot_controller.dart';
