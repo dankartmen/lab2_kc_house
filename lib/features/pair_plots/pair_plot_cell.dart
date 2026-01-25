@@ -377,21 +377,6 @@ class PairPlotCell extends StatelessWidget {
               ),
               size: constraints.biggest,
             ),
-            Positioned(
-              top: 4,
-              left: 4,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  'Стрипплот',
-                  style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w500),
-                ),
-              ),
-            ),
           ],
         );
       },

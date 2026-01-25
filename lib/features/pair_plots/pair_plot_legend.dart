@@ -19,22 +19,28 @@ class PairPlotLegend extends StatelessWidget {
         Text('Цвет: $fieldLabel',
             style: const TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),
-        ...scale.categories.map(
-          (c) => Row(
-            children: [
-              Container(
-                width: 10,
-                height: 10,
-                margin: const EdgeInsets.only(right: 6),
-                decoration: BoxDecoration(
-                  color: scale.colorOf(c),
-                  shape: BoxShape.circle,
-                ),
+
+        Row(
+          children: [
+            ...scale.categories.map(
+              (c) => Row(
+                children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    margin: const EdgeInsets.only(right: 6),
+                    decoration: BoxDecoration(
+                      color: scale.colorOf(c),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  Text(c),
+                  SizedBox(width: 6,)
+                ],
               ),
-              Text(c),
-            ],
-          ),
-        ),
+            ),
+          ]
+        )
       ],
     );
   }
