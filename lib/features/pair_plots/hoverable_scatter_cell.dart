@@ -39,85 +39,88 @@ class HoverableScatterCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      onHover: (event) =>
-          controller.model.setHoveredRow(_hitTest(event.localPosition)),
-      onExit: (_) => controller.model.setHoveredRow(null),
-      child: Stack(
-        children: [
-          CustomPaint(
-            painter: ScatterPainter(
-              data: data,
-              mapper: mapper,
-              dotSize: style.dotSize,
-              alpha: style.alpha,
-              showCorrelation: style.showCorrelation,
-              hoveredIndex: controller.model.hoveredRow,
-              pointsToDraw: filteredPoints,
-            ),
-            size: Size.infinite,
+    return LayoutBuilder(
+      builder: (_, constraints) {
+        final cellSize = constraints.biggest;
+
+        return MouseRegion(
+          onHover: (event) =>
+              controller.model.setHoveredRow(_hitTest(event.localPosition)),
+          onExit: (_) => controller.model.setHoveredRow(null),
+          child: Stack(
+            children: [
+              /// Основной scatter-плот
+              CustomPaint(
+                painter: ScatterPainter(
+                  data: data,
+                  mapper: mapper,
+                  dotSize: style.dotSize,
+                  alpha: style.alpha,
+                  showCorrelation: false, // ❗ correlation убираем из painter
+                  hoveredIndex: controller.model.hoveredRow,
+                  pointsToDraw: filteredPoints,
+                ),
+                size: cellSize,
+              ),
+
+              /// Ось X — ТОЛЬКО в нижнем ряду
+              if (showXAxis)
+                CustomPaint(
+                  painter: AxisPainter(
+                    mapper: mapper,
+                    axisRect: plotLayout.xAxisRect(cellSize),
+                    orientation: AxisOrientation.horizontal,
+                    label: x.label,
+                  ),
+                  size: cellSize,
+                ),
+
+              /// Ось Y — ТОЛЬКО в левом столбце
+              if (showYAxis)
+                CustomPaint(
+                  painter: AxisPainter(
+                    mapper: mapper,
+                    axisRect: plotLayout.yAxisRect(cellSize),
+                    orientation: AxisOrientation.vertical,
+                    label: y.label,
+                  ),
+                  size: cellSize,
+                ),
+
+              /// Минимальный индикатор корреляции
+              if (data.correlation != null)
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'r=${data.correlation!.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 9,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
-
-          if (showXAxis)
-            CustomPaint(
-              painter: AxisPainter(
-                mapper: mapper,
-                axisRect: plotLayout.xAxisRect(mapper.plotRect.size),
-                orientation: AxisOrientation.horizontal,
-                label: x.label,
-              ),
-            ),
-
-          if (showYAxis)
-            CustomPaint(
-              painter: AxisPainter(
-                mapper: mapper,
-                axisRect: plotLayout.yAxisRect(mapper.plotRect.size),
-                orientation: AxisOrientation.vertical,
-                label: y.label,
-              ),
-            ),
-
-          if (controller.model.hoveredRow != null)
-            _tooltip(controller.model.hoveredRow!),
-        ],
-      ),
+        );
+      },
     );
   }
 
+  /// Проверка, навели ли курсор на точку
   int? _hitTest(Offset pos) {
     for (final p in filteredPoints) {
       final mapped = mapper.map(p.x, p.y);
       if ((mapped - pos).distance < 6) return p.rowIndex;
     }
     return null;
-  }
-
-  Widget _tooltip(int row) {
-    final point = data.points.firstWhere((p) => p.rowIndex == row);
-
-    return Positioned(
-      left: 6,
-      top: 6,
-      child: Material(
-        elevation: 3,
-        borderRadius: BorderRadius.circular(6),
-        child: Padding(
-          padding: const EdgeInsets.all(6),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('${x.label}: ${point.x.toStringAsFixed(1)}'),
-              Text('${y.label}: ${point.y.toStringAsFixed(1)}'),
-              if (point.category != null)
-                Text(
-                  'Категория: ${point.category}',
-                  style: const TextStyle(color: Colors.grey),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }

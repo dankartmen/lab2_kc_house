@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 
 class HistogramPainter extends CustomPainter {
   final List<double> values;
-  final String label;
 
   HistogramPainter({
     required this.values,
-    required this.label,
   });
 
   @override

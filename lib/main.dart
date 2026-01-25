@@ -31,7 +31,7 @@ class HomeScreen extends StatelessWidget {
 
   Future<Dataset> _loadDataset() async {
     final source = CsvDataSource(
-      path: 'assets/world_population.csv',
+      path: 'assets/test.csv',
     );
     return source.load();
   }
@@ -58,7 +58,7 @@ class HomeScreen extends StatelessWidget {
           }
 
           final model = BIModel(snapshot.data!)
-            ..setHueField('Continent');
+            ..setHueField('cp');
 
           final controller = PairPlotController(model);
 

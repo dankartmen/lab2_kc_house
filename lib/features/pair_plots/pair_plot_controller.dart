@@ -128,6 +128,7 @@ class PairPlotController extends ChangeNotifier {
     );
   }
 
+  /// Получить минимальное значение для поля
   double getMin(FieldDescriptor field) {
     return _minCache.putIfAbsent(
       field.key,
@@ -156,7 +157,6 @@ class PairPlotController extends ChangeNotifier {
   }
   
 
-  /// Получить ScatterData с кэшированием
   ScatterData getScatterData(
     FieldDescriptor x,
     FieldDescriptor y, {

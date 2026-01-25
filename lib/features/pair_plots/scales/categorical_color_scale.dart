@@ -12,7 +12,6 @@ class CategoricalColorScale {
 
   Map<String, Color> get legend => Map.unmodifiable(_colors);
 
-  /// Фабрика
   factory CategoricalColorScale.fromData({
     required List<String> values,
     int maxCategories = 6,
