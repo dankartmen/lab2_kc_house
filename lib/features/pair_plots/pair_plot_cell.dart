@@ -7,6 +7,7 @@ import 'painters/categorical_histogram_painter.dart';
 import 'painters/strip_plot_painter.dart';
 import 'pair_plot_config.dart';
 import 'pair_plot_controller.dart';
+import 'pair_plot_detail_page.dart';
 import 'utils/plot_mapper.dart';
 
 /// Одна ячейка pair plot матрицы
@@ -37,12 +38,28 @@ class PairPlotCell extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
+    return InkWell(
+      onTap: isDiagonal
+          ? null
+          : () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => PairPlotDetailPage(
+                    x: x,
+                    y: y,
+                    controller: controller,
+                    config: config,
+                  ),
+                ),
+              );
+            },
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: isDiagonal ? _buildDiagonal() : _buildOffDiagonal(),
       ),
-      child: isDiagonal ? _buildDiagonal() : _buildOffDiagonal(),
     );
   }
 

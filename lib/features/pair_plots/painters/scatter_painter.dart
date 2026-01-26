@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lab2_kc_house/features/pair_plots/pair_plot_controller.dart';
 import 'package:lab2_kc_house/features/pair_plots/utils/plot_mapper.dart';
 import '../data/scatter_data.dart';
 
@@ -6,6 +7,7 @@ import '../data/scatter_data.dart';
 class ScatterPainter extends CustomPainter {
   final ScatterData data;
   final PlotMapper mapper;
+  final PairPlotController controller;
   final double dotSize;
   final bool showCorrelation;
   final double alpha;
@@ -14,6 +16,7 @@ class ScatterPainter extends CustomPainter {
 
   ScatterPainter({
     required this.data,
+    required this.controller,
     required this.mapper,
     required this.dotSize,
     required this.showCorrelation,
@@ -25,6 +28,9 @@ class ScatterPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     for (final p in pointsToDraw) {
+      if (p.category != null && !controller.isCategoryVisible(p.category!)) {
+        continue;
+      }
       final isHovered = hoveredIndex == p.rowIndex;
 
       final a = isHovered ? 1.0 : alpha;

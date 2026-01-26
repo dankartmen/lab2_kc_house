@@ -21,6 +21,8 @@ class PairPlotController extends ChangeNotifier {
   
   late List<int> _visibleRows;
 
+  final Set<String> activeCategories = {};
+
   // Кэши данных
   final Map<String, ScatterData> _scatterCache = {};
   final Map<String, List<double>> _numericCache = {};
@@ -47,6 +49,19 @@ class PairPlotController extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool isCategoryVisible(String category) {
+    if (activeCategories.isEmpty) return true;
+    return activeCategories.contains(category);
+  }
+
+  void toggleCategory(String category) {
+    if (activeCategories.contains(category)) {
+      activeCategories.remove(category);
+    } else {
+      activeCategories.add(category);
+    }
+  }
+  
   void _buildColorScale() {
     final hueKey = model.hueField;
     if (hueKey == null) {

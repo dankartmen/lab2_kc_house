@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../dataset/field_descriptor.dart';
 import 'data/scatter_data.dart';
 import 'layout/plot_layout.dart';
+import 'painters/regression_painter.dart';
 import 'pair_plot_style.dart';
 import 'utils/plot_mapper.dart';
 import 'painters/scatter_painter.dart';
@@ -44,26 +45,40 @@ class HoverableScatterCell extends StatelessWidget {
         final cellSize = constraints.biggest;
 
         return MouseRegion(
-          onHover: (event) =>
-              controller.model.setHoveredRow(_hitTest(event.localPosition)),
+          onHover: (event) {
+            controller.model.setHoveredRow(
+              _hitTest(event.localPosition),
+            );
+          },
           onExit: (_) => controller.model.setHoveredRow(null),
           child: Stack(
+            clipBehavior: Clip.none,
             children: [
-              /// Основной scatter-плот
+              /// Основной scatter-график
               CustomPaint(
                 painter: ScatterPainter(
                   data: data,
+                  controller: controller,
                   mapper: mapper,
                   dotSize: style.dotSize,
                   alpha: style.alpha,
-                  showCorrelation: false, // ❗ correlation убираем из painter
+                  showCorrelation: false,
                   hoveredIndex: controller.model.hoveredRow,
                   pointsToDraw: filteredPoints,
                 ),
                 size: cellSize,
               ),
 
-              /// Ось X — ТОЛЬКО в нижнем ряду
+              /// Линия линейной регрессии
+              CustomPaint(
+                painter: RegressionPainter(
+                  data: data,
+                  mapper: mapper,
+                ),
+                size: cellSize,
+              ),
+
+              /// Ось X — только в нижнем ряду
               if (showXAxis)
                 CustomPaint(
                   painter: AxisPainter(
@@ -75,7 +90,7 @@ class HoverableScatterCell extends StatelessWidget {
                   size: cellSize,
                 ),
 
-              /// Ось Y — ТОЛЬКО в левом столбце
+              /// Ось Y — только в левом столбце
               if (showYAxis)
                 CustomPaint(
                   painter: AxisPainter(
@@ -87,7 +102,7 @@ class HoverableScatterCell extends StatelessWidget {
                   size: cellSize,
                 ),
 
-              /// Минимальный индикатор корреляции
+              /// Индикатор корреляции
               if (data.correlation != null)
                 Positioned(
                   top: 4,
@@ -108,6 +123,10 @@ class HoverableScatterCell extends StatelessWidget {
                     ),
                   ),
                 ),
+
+              /// Tooltip при наведении на точку
+              if (controller.model.hoveredRow != null)
+                _buildTooltip(controller.model.hoveredRow!),
             ],
           ),
         );
@@ -115,11 +134,53 @@ class HoverableScatterCell extends StatelessWidget {
     );
   }
 
-  /// Проверка, навели ли курсор на точку
+  /// Tooltip, привязанный к конкретной точке
+  Widget _buildTooltip(int rowIndex) {
+    final point =
+        filteredPoints.firstWhere((p) => p.rowIndex == rowIndex);
+
+    final pos = mapper.map(point.x, point.y);
+
+    return Positioned(
+      left: pos.dx + 8,
+      top: pos.dy - 8,
+      child: Material(
+        elevation: 4,
+        borderRadius: BorderRadius.circular(6),
+        color: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: DefaultTextStyle(
+            style: const TextStyle(fontSize: 11, color: Colors.black),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${x.label}: ${point.x.toStringAsFixed(2)}'),
+                Text('${y.label}: ${point.y.toStringAsFixed(2)}'),
+                if (point.category != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      'Категория: ${point.category}',
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Проверка — попали ли курсором в точку
+  /// Используется для определения hoveredRow
   int? _hitTest(Offset pos) {
     for (final p in filteredPoints) {
       final mapped = mapper.map(p.x, p.y);
-      if ((mapped - pos).distance < 6) return p.rowIndex;
+      if ((mapped - pos).distance < 6) {
+        return p.rowIndex;
+      }
     }
     return null;
   }
