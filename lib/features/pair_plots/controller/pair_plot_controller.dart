@@ -2,12 +2,12 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:lab2_kc_house/features/bi_model/bi_model.dart';
-import 'package:lab2_kc_house/features/pair_plots/scales/categorical_color_scale.dart';
+import 'package:lab2_kc_house/features/rendering/scales/categorical_color_scale.dart';
 
-import '../../dataset/dataset.dart';
-import '../../dataset/field_descriptor.dart';
-import 'data/pair_plot_data_builder.dart';
-import 'data/scatter_data.dart';
+import '../../../dataset/dataset.dart';
+import '../../../dataset/field_descriptor.dart';
+import '../data/pair_plot_data_builder.dart';
+import '../data/scatter_data.dart';
 
 /// Контроллер для управления состоянием PairPlot.
 /// Хранит состояние фильтров и ховеров, уведомляет подписчиков об изменениях.

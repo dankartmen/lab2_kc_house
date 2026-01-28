@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'pair_plot_config.dart';
-import 'pair_plot_controller.dart';
-import 'pair_plot_matrix.dart';
-import 'pair_plot_legend.dart';
+import 'config/pair_plot_config.dart';
+import 'controller/pair_plot_controller.dart';
+import 'ui/pair_plot_matrix.dart';
+import 'ui/legend/pair_plot_legend.dart';
 
 class PairPlot extends StatelessWidget {
   final PairPlotConfig config;

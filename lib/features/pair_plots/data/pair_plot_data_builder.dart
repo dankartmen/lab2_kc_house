@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../dataset/dataset.dart';
 import '../../../dataset/field_descriptor.dart';
-import '../scales/categorical_color_scale.dart';
+import '../../rendering/scales/categorical_color_scale.dart';
 import 'scatter_data.dart';
 
 class PairPlotDataBuilder {

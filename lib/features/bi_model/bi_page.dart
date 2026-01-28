@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../pair_plots/pair_plot.dart';
-import '../pair_plots/pair_plot_config.dart';
-import '../pair_plots/pair_plot_style.dart';
-import '../pair_plots/pair_plot_controller.dart';
+import '../pair_plots/config/pair_plot_config.dart';
+import '../pair_plots/config/pair_plot_style.dart';
+import '../pair_plots/controller/pair_plot_controller.dart';
 import 'bi_control_panel.dart';
 import 'bi_model.dart';
 

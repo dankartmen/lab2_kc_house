@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../utils/plot_mapper.dart';
-import '../data/scatter_data.dart';
+import '../../pair_plots/utils/plot_mapper.dart';
+import '../../pair_plots/data/scatter_data.dart';
 
 /// Отрисовка линейной регрессии y = ax + b
 class RegressionPainter extends CustomPainter {

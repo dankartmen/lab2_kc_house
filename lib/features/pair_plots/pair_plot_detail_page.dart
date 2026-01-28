@@ -8,11 +8,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../dataset/field_descriptor.dart';
-import 'insight_engine.dart';
-import 'pair_plot_config.dart';
-import 'pair_plot_controller.dart';
-import 'hoverable_scatter_cell.dart';
-import 'layout/plot_layout.dart';
+import 'analysis/insight_engine.dart';
+import 'config/pair_plot_config.dart';
+import 'controller/pair_plot_controller.dart';
+import 'ui/cells/hoverable_scatter_cell.dart';
+import '../rendering/layout/plot_layout.dart';
 import 'utils/plot_mapper.dart';
 
 /// Fullscreen-экран анализа одной пары признаков

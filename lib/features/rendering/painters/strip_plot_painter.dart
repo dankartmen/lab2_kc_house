@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../dataset/field_descriptor.dart';
-import '../pair_plot_controller.dart';
+import '../../pair_plots/controller/pair_plot_controller.dart';
 import '../scales/categorical_color_scale.dart';
 
 class StripPlotPainter extends CustomPainter {

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../pair_plots/scales/categorical_color_scale.dart';
+import '../../../rendering/scales/categorical_color_scale.dart';
 
 class PairPlotLegend extends StatelessWidget {
   final CategoricalColorScale scale;

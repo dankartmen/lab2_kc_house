@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import '../../dataset/field_descriptor.dart';
-import 'data/scatter_data.dart';
-import 'layout/plot_layout.dart';
-import 'painters/regression_painter.dart';
-import 'pair_plot_style.dart';
-import 'utils/plot_mapper.dart';
-import 'painters/scatter_painter.dart';
-import 'painters/axis_painter.dart';
-import 'scales/categorical_color_scale.dart';
-import 'pair_plot_controller.dart';
+import '../../../../dataset/field_descriptor.dart';
+import '../../data/scatter_data.dart';
+import '../../../rendering/layout/plot_layout.dart';
+import '../../../rendering/painters/regression_painter.dart';
+import '../../config/pair_plot_style.dart';
+import '../../utils/plot_mapper.dart';
+import '../../../rendering/painters/scatter_painter.dart';
+import '../../../rendering/painters/axis_painter.dart';
+import '../../../rendering/scales/categorical_color_scale.dart';
+import '../../controller/pair_plot_controller.dart';
 
 class HoverableScatterCell extends StatelessWidget {
   final ScatterData data;

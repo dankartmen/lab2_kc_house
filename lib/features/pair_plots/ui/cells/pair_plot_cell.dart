@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import '../../dataset/field_descriptor.dart';
+import '../../../../dataset/field_descriptor.dart';
 import 'hoverable_scatter_cell.dart';
-import 'layout/plot_layout.dart';
-import 'painters/histogram_painter.dart';
-import 'painters/categorical_histogram_painter.dart';
-import 'painters/strip_plot_painter.dart';
-import 'pair_plot_config.dart';
-import 'pair_plot_controller.dart';
-import 'pair_plot_detail_page.dart';
-import 'utils/plot_mapper.dart';
+import '../../../rendering/layout/plot_layout.dart';
+import '../../../rendering/painters/histogram_painter.dart';
+import '../../../rendering/painters/categorical_histogram_painter.dart';
+import '../../../rendering/painters/strip_plot_painter.dart';
+import '../../config/pair_plot_config.dart';
+import '../../controller/pair_plot_controller.dart';
+import '../../pair_plot_detail_page.dart';
+import '../../utils/plot_mapper.dart';
 
 /// Одна ячейка pair plot матрицы
 class PairPlotCell extends StatelessWidget {

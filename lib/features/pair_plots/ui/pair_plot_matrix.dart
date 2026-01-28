@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../dataset/field_descriptor.dart';
-import 'pair_plot_cell.dart';
-import 'pair_plot_config.dart';
-import 'pair_plot_controller.dart';
+import '../../../dataset/field_descriptor.dart';
+import 'cells/pair_plot_cell.dart';
+import '../config/pair_plot_config.dart';
+import '../controller/pair_plot_controller.dart';
 
 class PairPlotMatrix extends StatelessWidget {
   final PairPlotConfig config;

@@ -3,7 +3,7 @@ import 'features/bi_model/bi_page.dart';
 import 'dataset/csv_data_source.dart';
 import 'dataset/dataset.dart';
 import 'features/bi_model/bi_model.dart';
-import 'features/pair_plots/pair_plot_controller.dart';
+import 'features/pair_plots/controller/pair_plot_controller.dart';
 
 Future<void> main() async {
   runApp(const MyApp());

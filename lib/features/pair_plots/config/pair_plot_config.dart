@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:lab2_kc_house/features/pair_plots/pair_plot_style.dart';
+import 'package:lab2_kc_house/features/pair_plots/config/pair_plot_style.dart';
 
-import '../../dataset/field_descriptor.dart';
+import '../../../dataset/field_descriptor.dart';
 
 /// {@template pair_plot_config}
 /// Базовая конфигурация для парных диаграмм (Pair Plot).
