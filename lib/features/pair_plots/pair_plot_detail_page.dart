@@ -13,6 +13,7 @@ import 'config/pair_plot_config.dart';
 import 'controller/pair_plot_controller.dart';
 import 'ui/cells/hoverable_scatter_cell.dart';
 import '../rendering/layout/plot_layout.dart';
+import 'ui/tooltip/scatter_tooltip.dart';
 import 'utils/plot_mapper.dart';
 
 /// Fullscreen-экран анализа одной пары признаков
@@ -109,18 +110,47 @@ class _PairPlotDetailPageState extends State<PairPlotDetailPage> {
             yMax: mapValue(ys.reduce((a, b) => a > b ? a : b)),
           );
 
-          return HoverableScatterCell(
-            data: data.copyMapped(mapValue),
-            mapper: mapper,
-            x: widget.x,
-            y: widget.y,
-            style: widget.config.style,
-            colorScale: widget.controller.colorScale,
-            showXAxis: true,
-            showYAxis: true,
-            plotLayout: plotLayout,
-            controller: widget.controller,
-            filteredPoints: data.points,
+          final mappedData = data.copyMapped(mapValue);
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              HoverableScatterCell(
+                data: mappedData,
+                mapper: mapper,
+                x: widget.x,
+                y: widget.y,
+                style: widget.config.style,
+                colorScale: widget.controller.colorScale,
+                showXAxis: true,
+                showYAxis: true,
+                plotLayout: plotLayout,
+                controller: widget.controller,
+                filteredPoints: mappedData.points,
+              ),
+
+              AnimatedBuilder(
+                animation: widget.controller.model,
+                builder: (_, __) {
+                  final row = widget.controller.model.hoveredRow;
+                  if (row == null) return const SizedBox.shrink();
+
+                  final point = mappedData.points
+                      .firstWhere((p) => p.rowIndex == row);
+
+                  final pos = mapper.map(point.x, point.y);
+
+                  return Positioned(
+                    left: pos.dx + 12,
+                    top: pos.dy - 12,
+                    child: ScatterTooltip(
+                      point: point,
+                      x: widget.x,
+                      y: widget.y,
+                    ),
+                  );
+                },
+              ),
+            ],
           );
         },
       ),

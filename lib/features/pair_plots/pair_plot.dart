@@ -32,12 +32,11 @@ class PairPlot extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (legend != null &&
-                        controller.model.hueField != null) ...[
+                    if (legend != null && controller.model.hueField != null) ...[
                       PairPlotLegend(
-                    scale: controller.colorScale!,
-                    fieldLabel: controller.model.hueField!,
-                  ),
+                        scale: controller.colorScale!,
+                        fieldLabel: controller.model.hueField!,
+                      ),
                       const SizedBox(height: 12),
                     ],
                     Expanded(

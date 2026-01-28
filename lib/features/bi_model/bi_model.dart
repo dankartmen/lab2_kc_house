@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../dataset/dataset.dart';
+import '../pair_plots/data/scatter_data.dart';
 import 'bi_analytics_service.dart';
 
 class BIModel extends ChangeNotifier {
@@ -21,7 +22,8 @@ class BIModel extends ChangeNotifier {
   final Map<String, Set<String>> categoricalFilters = {};
 
   int? hoveredRow;
-
+  ScatterPoint? hoveredPoint;
+  
   void setXField(String? v) {
     xField = v;
     notifyListeners();

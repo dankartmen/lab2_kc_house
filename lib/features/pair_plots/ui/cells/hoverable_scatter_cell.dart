@@ -10,6 +10,7 @@ import '../../../rendering/painters/axis_painter.dart';
 import '../../../rendering/scales/categorical_color_scale.dart';
 import '../../controller/pair_plot_controller.dart';
 
+
 class HoverableScatterCell extends StatelessWidget {
   final ScatterData data;
   final PlotMapper mapper;
@@ -123,10 +124,6 @@ class HoverableScatterCell extends StatelessWidget {
                     ),
                   ),
                 ),
-
-              /// Tooltip при наведении на точку
-              if (controller.model.hoveredRow != null)
-                _buildTooltip(controller.model.hoveredRow!),
             ],
           ),
         );
@@ -134,44 +131,7 @@ class HoverableScatterCell extends StatelessWidget {
     );
   }
 
-  /// Tooltip, привязанный к конкретной точке
-  Widget _buildTooltip(int rowIndex) {
-    final point =
-        filteredPoints.firstWhere((p) => p.rowIndex == rowIndex);
 
-    final pos = mapper.map(point.x, point.y);
-
-    return Positioned(
-      left: pos.dx + 8,
-      top: pos.dy - 8,
-      child: Material(
-        elevation: 4,
-        borderRadius: BorderRadius.circular(6),
-        color: Colors.white,
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: DefaultTextStyle(
-            style: const TextStyle(fontSize: 11, color: Colors.black),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('${x.label}: ${point.x.toStringAsFixed(2)}'),
-                Text('${y.label}: ${point.y.toStringAsFixed(2)}'),
-                if (point.category != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      'Категория: ${point.category}',
-                      style: const TextStyle(color: Colors.grey),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
   /// Проверка — попали ли курсором в точку
   /// Используется для определения hoveredRow
